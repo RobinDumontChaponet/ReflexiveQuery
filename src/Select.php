@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Reflexive\Core;
+namespace Reflexive\Query;
 
-class SelectQuery extends ComposedQuery
+class Select extends Composed
 {
 	public function __construct(?array $columns = [])
 	{

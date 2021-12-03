@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Reflexive\Core;
+namespace Reflexive\Query;
+
+use Reflexive\Core\Comparator;
 
 enum Operator: string {
 	case AND = ' AND ';
@@ -14,7 +16,7 @@ enum Direction: string {
 	case DESC = ' DESC ';
 }
 
-class ComposedQuery extends Query
+class Composed extends Simple
 {
 	protected $command;
 	protected $commandEnd = '';
@@ -59,7 +61,7 @@ class ComposedQuery extends Query
 	// Builder
 	public static function select(?array $columns = []): static
 	{
-		return new SelectQuery($columns);
+		return new Select($columns);
 	}
 
 	public static function create(?array $columns = []): static
@@ -90,17 +92,17 @@ class ComposedQuery extends Query
 
 	public static function delete(): static
 	{
-		return new DeleteQuery();
+		return new Delete();
 	}
 
 	public static function show(?array $columns = []): static
 	{
-		return new ShowQuery($columns);
+		return new Show($columns);
 	}
 
 	public static function call(): static
 	{
-		return new CallQuery();
+		return new Call();
 	}
 
 	// columns
@@ -320,6 +322,6 @@ class ComposedQuery extends Query
 	{
 		$this->bake();
 
-		return self->queryString;
+		return $this->queryString;
 	}
 }

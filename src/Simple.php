@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Reflexive\Core;
+namespace Reflexive\Query;
 
-class Query implements QueryMapperInterface
+class Simple
 {
 	protected $pdo;
 
