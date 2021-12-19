@@ -6,16 +6,6 @@ namespace Reflexive\Query;
 
 use Reflexive\Core\Comparator;
 
-enum Operator: string {
-	case AND = ' AND ';
-	case OR = ' OR ';
-}
-
-enum Direction: string {
-	case ASC = ' ASC ';
-	case DESC = ' DESC ';
-}
-
 class Composed extends Simple
 {
 	protected $command;
