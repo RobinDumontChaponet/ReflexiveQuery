@@ -33,7 +33,6 @@ class Simple
 		return $this->queryString;
 	}
 
-
 	public static function format(?\PDOStatement $statement): string
 	{
 		if(null === $statement || $statement->rowCount() <= 0)

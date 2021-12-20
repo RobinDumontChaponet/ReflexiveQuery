@@ -8,6 +8,8 @@ use Reflexive\Core\Comparator;
 
 class Composed extends Simple
 {
+	protected const DEFAULTCOLUMNS = '*';
+
 	protected $command;
 	protected $commandEnd = '';
 	protected $columns = [];
@@ -32,6 +34,9 @@ class Composed extends Simple
 		if(!empty($this->queryString))
 			return;
 
+		$this->parameters = [];
+		$this->index = 0;
+
 		$this->queryString = $this->command. (empty($this->commandEnd) ? ' ' : '');
 		$this->queryString.= $this->getColumnsString();
 		$this->queryString.= !empty($this->commandEnd) ? $this->commandEnd.' ' : '';
@@ -44,7 +49,6 @@ class Composed extends Simple
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
 		$this->bake();
-
 		return parent::prepare($pdo);
 	}
 
@@ -54,20 +58,14 @@ class Composed extends Simple
 		return new Select($columns);
 	}
 
-	public static function create(?array $columns = []): static
+	public static function insert(?array $columns = []): static
 	{
-		$object = new self('CREATE');
-		$object->setColumns($columns);
-
-		return $object;
+		return new Insert($columns);
 	}
 
 	public static function update(?array $columns = []): static
 	{
-		$object = new self('UPDATE');
-		$object->setColumns($columns);
-
-		return $object;
+		return new Update($columns);
 	}
 
 	public static function count(?array $columns = []): static
@@ -116,7 +114,7 @@ class Composed extends Simple
 	protected function getColumnsString(): string
 	{
 		if(empty($this->columns))
-			return '*';
+			return static::DEFAULTCOLUMNS;
 
 		$str = '';
 		foreach($this->columns as $key => $column) {
@@ -139,6 +137,7 @@ class Composed extends Simple
 	{
 		$this->queryString = null;
 		$this->nextOperator = null;
+		$this->tables = [];
 
 		if(is_array($tables)) {
 			foreach($tables as $key => $table) {
@@ -199,9 +198,6 @@ class Composed extends Simple
 	}
 	protected function getWhereString(): string
 	{
-		$this->parameters = [];
-		$this->index = 0;
-
 		if(empty($this->conditions))
 			return '';
 
