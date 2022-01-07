@@ -6,10 +6,9 @@ namespace Reflexive\Query;
 
 class Select extends Composed
 {
-	public function __construct(?array $columns = [])
+	public function __construct(array|string|null $columns = [])
 	{
-		parent::__construct('SELECT');
-		$this->setColumns($columns);
+		parent::__construct('SELECT', $columns);
 	}
 
 	public function explain(\PDO $pdo): \PDOStatement

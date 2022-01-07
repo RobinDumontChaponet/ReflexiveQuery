@@ -22,10 +22,11 @@ class Composed extends Simple
 	protected $limit;
 	protected $offset;
 
-	protected function __construct(string $command, string $end = '')
+	protected function __construct(string $command, array|string|null $columns = [], string $end = '')
 	{
 		$this->command = $command;
 		$this->commandEnd = $end;
+		$this->setColumns($columns);
 	}
 
 	// abstract protected function bake(): void;
@@ -53,37 +54,27 @@ class Composed extends Simple
 	}
 
 	// Builder
-	public static function select(?array $columns = []): static
+	public static function select(array|string|null $columns = []): static
 	{
 		return new Select($columns);
 	}
 
-	public static function insert(?array $columns = []): static
+	public static function insert(array|string|null $columns = []): static
 	{
 		return new Insert($columns);
 	}
 
-	public static function update(?array $columns = []): static
+	public static function update(array|string|null $columns = []): static
 	{
-		return new Update($columns);
+		return new update($columns);
 	}
 
-	public static function count(?array $columns = []): static
+	public static function delete(array|string|null $columns = []): static
 	{
-		$object = new self('SELECT COUNT(', ')');
-
-		$object->setColumns($columns);
-		$object->quoteColumns = true;
-
-		return $object;
+		return new Delete($columns);
 	}
 
-	public static function delete(): static
-	{
-		return new Delete();
-	}
-
-	public static function show(?array $columns = []): static
+	public static function show(array|string|null $columns = []): static
 	{
 		return new Show($columns);
 	}
@@ -94,7 +85,7 @@ class Composed extends Simple
 	}
 
 	// columns
-	protected function setColumns(array $columns = []): void
+	protected function setColumns(array|string|null $columns = []): void
 	{
 		if(is_array($columns)) {
 			foreach($columns as $key => $column) {
@@ -111,6 +102,12 @@ class Composed extends Simple
 			$this->columns = [];
 		}
 	}
+
+	protected static function quote(string $string): string
+	{
+		return preg_replace('/\b((?<!`)[^\s()`]+(?![\(`]))\b/i', '`$1`', $string);
+	}
+
 	protected function getColumnsString(): string
 	{
 		if(empty($this->columns))
@@ -118,9 +115,9 @@ class Composed extends Simple
 
 		$str = '';
 		foreach($this->columns as $key => $column) {
-			if($this->quoteColumns && !str_starts_with($column, "\u{0060}"))
-				$str.= "\u{0060}".$column."\u{0060}";
-			else
+			if($this->quoteColumns && !str_starts_with($column, "\u{0060}")) {
+				$str.= static::quote($column);
+			} else
 				$str.= $column;
 
 			if(is_string($key))
@@ -163,10 +160,7 @@ class Composed extends Simple
 
 		$str = ' FROM ';
 		foreach($this->tables as $key => $table) {
-			if(!str_starts_with($table, "\u{0060}"))
-				$str.= "\u{0060}".$table."\u{0060}";
-			else
-				$str.= $table;
+			$str.= static::quote($table);
 
 			if(is_string($key))
 				$str.= ' '.$key;
@@ -181,7 +175,7 @@ class Composed extends Simple
 	public function where(string $name, Comparator $comparator, string|int|float|array $value = null): static
 	{
 		if(!empty($this->conditions) && empty($this->nextOperator))
-			throw new \TypeError('Condition added to query chain without operator before last condition.');
+			throw new \TypeError('Condition added to query chain without operator before previous condition.');
 
 		$this->queryString = null;
 
@@ -215,7 +209,10 @@ class Composed extends Simple
 				$this->parameters[$condition['name'].'_'.$this->index] = $condition['value'];
 				$conditionStr = ' :'.$condition['name'].'_'.$this->index++.' ';
 			}
-			$str .= $condition['operator']?->value." \u{0060}".str_replace("\u{0060}", "\u{0060}\u{0060}", $condition['name'])."\u{0060} ".$condition['comparator']?->value.$conditionStr;
+
+
+
+			$str .= $condition['operator']?->value.' '.static::quote($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
 		}
 
 		return $str;
@@ -261,7 +258,7 @@ class Composed extends Simple
 
 		$str = 'ORDER BY ';
 		foreach($this->orders as $order) {
-			$str.= "\u{0060}".$order['column']."\u{0060} ".$order['direction']->value.', ';
+			$str.= static::quote($order['column']).' '.$order['direction']->value.', ';
 		}
 
 		return rtrim($str, ', '). ' ';

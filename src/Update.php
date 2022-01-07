@@ -8,10 +8,9 @@ class Update extends Composed
 {
 	protected array $sets = [];
 
-	public function __construct(?array $columns = [])
+	public function __construct(array|string|null $columns = [])
 	{
-		parent::__construct('UPDATE');
-		$this->setColumns($columns);
+		parent::__construct('UPDATE', $columns);
 	}
 
 	protected function bake(): void
