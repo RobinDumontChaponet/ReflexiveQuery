@@ -6,8 +6,6 @@ namespace Reflexive\Query;
 
 class Simple
 {
-	protected $pdo;
-
 	protected $parameters = [];
 	protected $queryString;
 
