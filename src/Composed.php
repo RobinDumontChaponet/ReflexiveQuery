@@ -21,6 +21,7 @@ class Composed extends Simple
 	protected $orders;
 	protected $limit;
 	protected $offset;
+	protected $parameters = [];
 
 	protected function __construct(string $command, array|string|null $columns = [], string $end = '')
 	{
@@ -50,7 +51,18 @@ class Composed extends Simple
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
 		$this->bake();
-		return parent::prepare($pdo);
+
+		// $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+		$statement = $pdo->prepare($this->queryString, [
+			\PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
+		]);
+		// $statement->setFetchMode(\PDO::FETCH_OBJ);
+
+		foreach($this->parameters as $key => $value) {
+			$statement->bindValue($key, $value);
+		}
+
+		return $statement;
 	}
 
 	// Builder
@@ -85,7 +97,7 @@ class Composed extends Simple
 	}
 
 	// columns
-	protected function setColumns(array|string|null $columns = []): void
+	public function setColumns(array|string|null $columns = []): void
 	{
 		if(is_array($columns)) {
 			foreach($columns as $key => $column) {
@@ -105,7 +117,7 @@ class Composed extends Simple
 
 	protected static function quote(string $string): string
 	{
-		return preg_replace('/\b((?<!`)[^\s()`]+(?![\(`]))\b/i', '`$1`', $string);
+		return preg_replace('/\b((?<!`)[^\s()`\.]+(?![\(`]))\b/i', '`$1`', $string);
 	}
 
 	protected function getColumnsString(): string
@@ -198,16 +210,17 @@ class Composed extends Simple
 		$str = ' WHERE ';
 		foreach($this->conditions as $condition) {
 			$conditionStr = '';
+			$key = lcfirst(str_replace('.', '', $condition['name']));
 
 			if(is_array($condition['value'])) { // we have an array of value, probably for an IN condition or something
 				foreach($condition['value'] as $value) {
-					$this->parameters[$condition['name'].'_'.$this->index] = $value;
-					$conditionStr.= ':'.$condition['name'].'_'.$this->index++.',';
+					$this->parameters[$key.'_'.$this->index] = $value;
+					$conditionStr.= ':'.$key.'_'.$this->index++.',';
 				}
 				$conditionStr = ' ('. rtrim($conditionStr, ',') .') ';
 			} else { // we have a simple value
-				$this->parameters[$condition['name'].'_'.$this->index] = $condition['value'];
-				$conditionStr = ' :'.$condition['name'].'_'.$this->index++.' ';
+				$this->parameters[$key.'_'.$this->index] = $condition['value'];
+				$conditionStr = ' :'.$key.'_'.$this->index++.' ';
 			}
 
 
@@ -220,7 +233,8 @@ class Composed extends Simple
 
 	public function and(...$where): static
 	{
-		$this->nextOperator = Operator::AND;
+		if(!empty($this->conditions))
+			$this->nextOperator = Operator::AND;
 
 		if(!empty($where))
 			$this->where(...$where);
@@ -230,7 +244,8 @@ class Composed extends Simple
 
 	public function or(...$where): static
 	{
-		$this->nextOperator = Operator::OR;
+		if(!empty($this->conditions))
+			$this->nextOperator = Operator::OR;
 
 		if(!empty($where))
 			$this->where(...$where);
@@ -256,7 +271,7 @@ class Composed extends Simple
 		if(empty($this->orders))
 			return '';
 
-		$str = 'ORDER BY ';
+		$str = ' ORDER BY ';
 		foreach($this->orders as $order) {
 			$str.= static::quote($order['column']).' '.$order['direction']->value.', ';
 		}
@@ -277,6 +292,10 @@ class Composed extends Simple
 
 		return $this;
 	}
+	public function getLimit(): ?int
+	{
+		return $this->limit;
+	}
 	public function offset(int $offset = null): static
 	{
 		$this->queryString = null;
@@ -288,6 +307,10 @@ class Composed extends Simple
 		$this->offset = $offset;
 
 		return $this;
+	}
+	public function getOffset(): ?int
+	{
+		return $this->offset;
 	}
 	protected function getLimitOffsetString(): string
 	{

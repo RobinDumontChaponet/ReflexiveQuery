@@ -15,21 +15,21 @@ class Select extends Composed
 		parent::__construct('SELECT', $columns);
 	}
 
-	public function join(Join $joinType, string $rightTableName, string $attributeName, Comparator $comparator = Comparator.EQUAL, ?string $leftTableName = null, ?string $leftAttributeName = null): static
+	public function join(Join $joinType, string $rightTableName, string $columnName, Comparator $comparator = Comparator::EQUAL, ?string $leftTableName = null, ?string $leftColumnName = null): static
 	{
 		$this->joins[] = [
 			'type' => $joinType,
 			'leftTableName' => $leftTableName,
-			'leftAttributeName' => $leftAttributeName ?? $attributeName,
+			'leftColumnName' => $leftColumnName ?? $columnName,
 			'rightTableName' => $rightTableName,
-			'rightAttributeName' => $attributeName,
+			'rightColumnName' => $columnName,
 			'comparator' => $comparator,
 			'condition' => null, // WHERE B.key IS NULL
 		];
 
 		return $this;
 	}
-	protected function getJoinString(): string
+	public function getJoinString(): string
 	{
 		if(empty($this->joins))
 			return '';
@@ -50,10 +50,30 @@ class Select extends Composed
 			if(empty($leftTableName))
 				throw new \TypeError('Cannot join without left table name');
 
-			$str .= 'JOIN ' . $join['type']?->value . ' ' . static::quote($join['rightTableName']) . ' ON ' . $leftTableName . '.' . $join['leftAttributeName'] . ' ' . $join['comparator']->value . ' ' . $join['rightTableName'] . '.' . $join['rightAttributeName'];
+			$str .= $join['type']?->value . ' ' . static::quote($join['rightTableName']) . ' ON ' . static::quote($leftTableName . '.' . $join['leftColumnName']) . ' ' . $join['comparator']->value . ' ' . static::quote($join['rightTableName'] . '.' . $join['rightColumnName']).' ';
 		}
 
 		return $str;
+	}
+
+	protected function bake(): void
+	{
+		if(!empty($this->queryString))
+			return;
+
+		$this->parameters = [];
+		$this->index = 0;
+
+		$this->queryString = $this->command. (empty($this->commandEnd) ? ' ' : '');
+		$this->queryString.= $this->getColumnsString();
+		$this->queryString.= !empty($this->commandEnd) ? $this->commandEnd.' ' : '';
+		$this->queryString.= $this->getFromString();
+
+		$this->queryString.= $this->getJoinString();
+
+		$this->queryString.= $this->getWhereString();
+		$this->queryString.= $this->getOrderString();
+		$this->queryString.= $this->getLimitOffsetString();
 	}
 
 	public function explain(\PDO $pdo): \PDOStatement

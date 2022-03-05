@@ -6,10 +6,9 @@ namespace Reflexive\Query;
 
 class Simple
 {
-	protected $parameters = [];
 	protected $queryString;
 
-	protected function __construct(string $queryString = '')
+	function __construct(string $queryString = '')
 	{
 		$this->queryString = $queryString;
 	}
@@ -18,10 +17,6 @@ class Simple
 	{
 		$statement = $pdo->prepare($this->queryString);
 		$statement->setFetchMode(\PDO::FETCH_OBJ);
-
-		foreach($this->parameters as $key => $value) {
-			$statement->bindValue($key, $value);
-		}
 
 		return $statement;
 	}
