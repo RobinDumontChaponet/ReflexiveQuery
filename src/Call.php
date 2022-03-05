@@ -8,12 +8,12 @@ use Exception;
 
 class Call extends Composed
 {
-	public function __construct(array|string|null $columns = [])
+	public function __construct()
 	{
 		parent::__construct('CALL');
 		// $this->setColumns($columns);
 		// $this->quoteColumns = false;
 
-		throw new Exception('NOT YET IMPLEMENTDE');
+		throw new Exception('NOT YET IMPLEMENTED');
 	}
 }
