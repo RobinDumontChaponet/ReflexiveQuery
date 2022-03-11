@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
-use Reflexive\Core\Comparator;
-
 class Select extends Composed
 {
 	protected array $joins = [];
