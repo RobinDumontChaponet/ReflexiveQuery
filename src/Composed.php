@@ -364,7 +364,7 @@ class Composed extends Simple
 
 		$str = 'LIMIT '. $this->limit .' ';
 		if(!empty($this->offset))
-			$this->queryString.= 'OFFSET '. $this->offset .' ';
+			$str.= 'OFFSET '. $this->offset .' ';
 
 		return $str;
 	}
