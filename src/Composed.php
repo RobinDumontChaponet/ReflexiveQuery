@@ -13,7 +13,7 @@ class Composed extends Simple
 	protected $command;
 	protected $commandEnd = '';
 	protected $columns = [];
-	protected $quoteColumns = true;
+	protected $quoteNames = true;
 	protected $tables = [];
 	protected $conditions = [];
 	protected $nextOperator;
@@ -118,9 +118,12 @@ class Composed extends Simple
 		}
 	}
 
-	protected static function quote(string $string): string
+	protected function quote(string $string): string
 	{
-		return preg_replace('/\b((?<!`)[^\s()`\.]+(?![\(`]))\b/i', '`$1`', $string);
+		if($this->quoteNames)
+			return preg_replace('/\b((?<!`)[^\s()`\.]+(?![\(`]))\b/i', '`$1`', $string);
+		else
+			return $string;
 	}
 
 	protected function getColumnsString(): string
@@ -130,10 +133,7 @@ class Composed extends Simple
 
 		$str = '';
 		foreach($this->columns as $key => $column) {
-			if($this->quoteColumns && !str_starts_with($column, "\u{0060}")) {
-				$str.= static::quote($column);
-			} else
-				$str.= $column;
+			$str.= $this->quote($column);
 
 			if(is_string($key))
 				$str.= ' '.$key;
@@ -175,7 +175,7 @@ class Composed extends Simple
 
 		$str = ' FROM ';
 		foreach($this->tables as $key => $table) {
-			$str.= static::quote($table);
+			$str.= $this->quote($table);
 
 			if(is_string($key))
 				$str.= ' '.$key;
@@ -228,7 +228,7 @@ class Composed extends Simple
 
 
 
-			$str .= $condition['operator']?->value.' '.static::quote($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
+			$str .= $condition['operator']?->value.' '.$this->quote($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
 		}
 
 		return $str;
@@ -286,13 +286,13 @@ class Composed extends Simple
 				if(is_string($key = array_keys($this->tables)[0]))
 					$leftTableName = $key;
 				else
-					$leftTableName = static::quote(array_values($this->tables)[0]);
+					$leftTableName = $this->quote(array_values($this->tables)[0]);
 			}
 
 			if(empty($leftTableName))
 				throw new \TypeError('Cannot join without left table name');
 
-			$str .= $join['type']?->value . ' ' . static::quote($join['rightTableName']) . ' ON ' . static::quote($leftTableName . '.' . $join['leftColumnName']) . ' ' . $join['comparator']->value . ' ' . static::quote($join['rightTableName'] . '.' . $join['rightColumnName']).' ';
+			$str .= $join['type']?->value . ' ' . $this->quote($join['rightTableName']) . ' ON ' . $this->quote($leftTableName . '.' . $join['leftColumnName']) . ' ' . $join['comparator']->value . ' ' . $this->quote($join['rightTableName'] . '.' . $join['rightColumnName']).' ';
 		}
 
 		return $str;
@@ -318,7 +318,7 @@ class Composed extends Simple
 
 		$str = ' ORDER BY ';
 		foreach($this->orders as $order) {
-			$str.= static::quote($order['column']).' '.$order['direction']->value.', ';
+			$str.= $this->quote($order['column']).' '.$order['direction']->value.', ';
 		}
 
 		return rtrim($str, ', '). ' ';

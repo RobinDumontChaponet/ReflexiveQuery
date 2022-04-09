@@ -12,7 +12,7 @@ class Call extends Composed
 	{
 		parent::__construct('CALL');
 		// $this->setColumns($columns);
-		// $this->quoteColumns = false;
+		// $this->quoteNames = false;
 
 		throw new Exception('NOT YET IMPLEMENTED');
 	}

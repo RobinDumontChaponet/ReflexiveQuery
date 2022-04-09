@@ -30,19 +30,4 @@ class Multiple extends Simple
 		$this->bake();
 		return parent::prepare($pdo);
 	}
-
-	public function __toString(): string
-	{
-		return $this->queryString;
-	}
-
-	public static function read(\PDOStatement $statement, string $key): mixed
-	{
-		// Get row data
-		if($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
-			return $row[$key];
-		}
-
-		return null;
-	}
 }

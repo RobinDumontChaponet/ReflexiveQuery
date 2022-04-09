@@ -10,6 +10,6 @@ class Show extends Composed
 	{
 		parent::__construct('SHOW');
 		$this->setColumns($columns);
-		$this->quoteColumns = false;
+		$this->quoteNames = false;
 	}
 }

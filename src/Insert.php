@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
-class Insert extends Composed
+class Insert extends Push
 {
 	protected array $sets = [];
 
@@ -27,18 +27,6 @@ class Insert extends Composed
 		$this->queryString.= !empty($this->commandEnd) ? $this->commandEnd.' ' : '';
 	}
 
-	// set
-	public function set(string $name, string|int|float|array $value = null): static
-	{
-		$this->queryString = null;
-
-		$this->sets[] = [
-			'name' => trim($name),
-			'value' => $value,
-		];
-
-		return $this;
-	}
 	protected function getSetString(): string
 	{
 		if(empty($this->sets))
@@ -46,7 +34,7 @@ class Insert extends Composed
 
 		$str = ' (';
 		foreach($this->sets as $set) { // columns names
-			$str .= "\u{0060}".str_replace("\u{0060}", "\u{0060}\u{0060}", $set['name'])."\u{0060} ".', ';
+			$str .= $this->quote($set['name']).', ';
 		}
 
 		$str = rtrim($str, ', ').') values (';
@@ -56,26 +44,5 @@ class Insert extends Composed
 		}
 
 		return rtrim($str, ', ').') ';
-	}
-
-	protected function getIntoString(): string
-	{
-		if(empty($this->tables))
-			return '';
-
-		$str = '';
-		foreach($this->tables as $key => $table) {
-			if(!str_starts_with($table, "\u{0060}"))
-				$str.= "\u{0060}".$table."\u{0060}";
-			else
-				$str.= $table;
-
-			if(is_string($key))
-				$str.= ' '.$key;
-
-			$str.= ', ';
-		}
-
-		return rtrim($str, ', ');
 	}
 }
