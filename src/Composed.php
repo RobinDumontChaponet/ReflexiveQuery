@@ -193,9 +193,10 @@ class Composed extends Simple
 			throw new \TypeError('Condition added to query chain without operator before previous condition.');
 
 		$this->queryString = null;
+		$name = trim($name);
 
-		$this->conditions[] = [
-			'name' => trim($name),
+		$this->conditions[$name] = [
+			'name' => $name,
 			'comparator' => $comparator,
 			'value' => $value,
 			'operator' => $this->nextOperator,
@@ -205,6 +206,12 @@ class Composed extends Simple
 
 		return $this;
 	}
+
+	public function getConditions(): array
+	{
+		return $this->conditions;
+	}
+
 	protected function getWhereString(): string
 	{
 		if(empty($this->conditions))
