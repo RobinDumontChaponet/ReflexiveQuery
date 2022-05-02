@@ -6,15 +6,17 @@ namespace Reflexive\Query;
 
 class Simple
 {
-	protected $queryString;
+	// stats
+	public static int $prepareCount = 0;
 
-	function __construct(string $queryString = '')
-	{
-		$this->queryString = $queryString;
-	}
+	function __construct(
+		protected ?string $queryString = ''
+	) {}
 
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
+		static::$prepareCount++;
+
 		$statement = $pdo->prepare($this->queryString);
 		$statement->setFetchMode(\PDO::FETCH_OBJ);
 

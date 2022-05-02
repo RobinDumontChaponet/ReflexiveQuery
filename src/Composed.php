@@ -10,23 +10,22 @@ class Composed extends Simple
 {
 	protected const DEFAULTCOLUMNS = '*';
 
-	protected $command;
-	protected $commandEnd = '';
-	protected $columns = [];
-	protected $quoteNames = true;
-	protected $tables = [];
-	protected $conditions = [];
-	protected $nextOperator;
-	protected $index = 0;
-	protected $orders;
-	protected $limit;
-	protected $offset;
-	protected $parameters = [];
+	protected array $columns = [];
+	protected bool $quoteNames = true;
+	protected array $tables = [];
+	protected array $conditions = [];
+	protected ?Operator $nextOperator;
+	protected int $index = 0;
+	protected array $orders;
+	protected ?int $limit = null;
+	protected ?int $offset = null;
+	protected array $parameters = [];
 
-	protected function __construct(string $command, array|string|null $columns = [], string $end = '')
-	{
-		$this->command = $command;
-		$this->commandEnd = $end;
+	protected function __construct(
+		protected string $command,
+		array|string|null $columns = [],
+		protected string $commandEnd = '',
+	) {
 		$this->setColumns($columns);
 	}
 
@@ -53,6 +52,8 @@ class Composed extends Simple
 
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
+		static::$prepareCount++;
+
 		$this->bake();
 
 		// $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
