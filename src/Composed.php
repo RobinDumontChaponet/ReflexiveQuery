@@ -14,7 +14,7 @@ class Composed extends Simple
 	protected bool $quoteNames = true;
 	protected array $tables = [];
 	protected array $conditions = [];
-	protected ?Operator $nextOperator;
+	protected ?Operator $nextOperator = null;
 	protected int $index = 0;
 	protected array $orders;
 	protected ?int $limit = null;
