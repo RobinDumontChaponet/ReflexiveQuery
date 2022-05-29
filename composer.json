@@ -20,11 +20,5 @@
 		"psr-4": {
 			"Reflexive\\Query\\": "src/"
 		}
-	},
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/Users/r-dc/Sites/Reflexive/Core"
-        }
-    ]
+	}
 }
