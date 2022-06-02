@@ -30,6 +30,9 @@ class Simple
 
 	public static function read(\PDOStatement $statement, string $key): mixed
 	{
+		if(null === $statement->errorCode())
+			$statement->execute();
+
 		// Get row data
 		if($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
 			return $row[$key];
