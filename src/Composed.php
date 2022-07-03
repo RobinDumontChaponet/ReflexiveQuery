@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use PDOException;
 use Reflexive\Core\Comparator;
+use RuntimeException;
+use TypeError;
 
 class Composed extends Simple
 {
@@ -56,11 +59,13 @@ class Composed extends Simple
 
 		$this->bake();
 
-		// $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
 		$statement = $pdo->prepare($this->queryString, [
 			\PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
 		]);
-		// $statement->setFetchMode(\PDO::FETCH_OBJ);
+
+		if($statement === false) {
+			throw new TypeError('PDO->prepare did not return a PDOStatement');
+		}
 
 		foreach($this->parameters as $key => $value) {
 			$statement->bindValue($key, $value);
