@@ -60,7 +60,7 @@ class Composed extends Simple
 		$this->bake();
 
 		$statement = $pdo->prepare($this->queryString, [
-			\PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
+			// \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
 		]);
 
 		if($statement === false) {
