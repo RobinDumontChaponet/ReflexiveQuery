@@ -1,6 +1,6 @@
 {
 	"name": "reflexive/query",
-	"description": "Description is coming",
+	"description": "Somewhat effective SQL query builder",
 	"type": "library",
 	"license": "MIT",
 	"authors": [
@@ -21,16 +21,6 @@
 			"Reflexive\\Query\\": "src/"
 		}
 	},
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/Users/r-dc/Sites/Reflexive/Core",
-			"options": {
-			  "symlink": true
-			},
-			"canonical": false
-        }
-    ],
 	"require-dev": {
 		"vimeo/psalm": "^4.24"
 	}
