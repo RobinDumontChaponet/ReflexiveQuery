@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use DomainException;
+
 class Select extends Composed
 {
 	protected array $joins = [];
@@ -15,9 +17,12 @@ class Select extends Composed
 
 	public function explain(\PDO $pdo): \PDOStatement
 	{
+		if(empty($this->queryString))
+			throw new DomainException('Empty query string');
+
 		try {
 			$this->bake();
-			$this->queryString = 'EXPLAIN '. $this->queryString;
+			$this->queryString = 'EXPLAIN '. ($this->queryString ?? '');
 
 			return parent::prepare($pdo);
 		} finally {

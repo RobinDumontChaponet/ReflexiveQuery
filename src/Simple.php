@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use DomainException;
+
 class Simple
 {
 	// stats
@@ -13,11 +15,23 @@ class Simple
 		protected ?string $queryString = ''
 	) {}
 
+	/*
+	 * @throws \TypeError
+	 */
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
-		static::$prepareCount++;
+		if(empty($this->queryString))
+			throw new DomainException('Empty query string');
 
-		$statement = $pdo->prepare($this->queryString);
+		$statement = $pdo->prepare($this->queryString, [
+			// \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
+		]);
+
+		if($statement === false) {
+			throw new \TypeError('PDO->prepare did not return a PDOStatement');
+		}
+
+		static::$prepareCount++;
 		$statement->setFetchMode(\PDO::FETCH_OBJ);
 
 		return $statement;
@@ -25,7 +39,7 @@ class Simple
 
 	public function __toString(): string
 	{
-		return $this->queryString;
+		return $this->queryString ?? '';
 	}
 
 	public static function read(\PDOStatement $statement, string $key): mixed
@@ -62,7 +76,7 @@ class Simple
 			$str.= '<tr>';
 			for ($i = 0; $i < $count; $i++){
 				$meta = $statement->getColumnMeta($i)["name"];
-				$str.= '<td>' . $row[$meta] . '</td>';
+				$str.= '<td>' . ($row[$meta] ?? '') . '</td>';
 			}
 			$str.= '</tr>';
 		}

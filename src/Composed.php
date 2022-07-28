@@ -19,16 +19,18 @@ class Composed extends Simple
 	protected array $conditions = [];
 	protected ?Operator $nextOperator = null;
 	protected int $index = 0;
-	protected array $orders;
+	protected array $orders = [];
 	protected ?int $limit = null;
 	protected ?int $offset = null;
 	protected array $parameters = [];
+	protected array $joins = [];
 
 	protected function __construct(
 		protected string $command,
 		array|string|null $columns = [],
 		protected string $commandEnd = '',
 	) {
+		parent::__construct();
 		$this->setColumns($columns);
 	}
 
@@ -53,19 +55,13 @@ class Composed extends Simple
 		$this->queryString.= $this->getLimitOffsetString();
 	}
 
+	/*
+	 * @throws \TypeError
+	 */
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
-		static::$prepareCount++;
-
 		$this->bake();
-
-		$statement = $pdo->prepare($this->queryString, [
-			// \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
-		]);
-
-		if($statement === false) {
-			throw new TypeError('PDO->prepare did not return a PDOStatement');
-		}
+		$statement = parent::prepare($pdo);
 
 		foreach($this->parameters as $key => $value) {
 			$statement->bindValue($key, $value);
@@ -75,32 +71,32 @@ class Composed extends Simple
 	}
 
 	// Builder
-	public static function select(array|string|null $columns = []): static
+	public static function select(array|string|null $columns = []): Select
 	{
 		return new Select($columns);
 	}
 
-	public static function insert(array|string|null $columns = []): static
+	public static function insert(array|string|null $columns = []): Insert
 	{
 		return new Insert($columns);
 	}
 
-	public static function update(array|string|null $columns = []): static
+	public static function update(array|string|null $columns = []): Update
 	{
-		return new update($columns);
+		return new Update($columns);
 	}
 
-	public static function delete(array|string|null $columns = []): static
+	public static function delete(): Delete
 	{
-		return new Delete($columns);
+		return new Delete();
 	}
 
-	public static function show(array|string|null $columns = []): static
+	public static function show(array|string|null $columns = []): Show
 	{
 		return new Show($columns);
 	}
 
-	public static function call(): static
+	public static function call(): Call
 	{
 		return new Call();
 	}
@@ -193,7 +189,7 @@ class Composed extends Simple
 	}
 
 	// where
-	public function where(string $name, Comparator $comparator, string|int|float|array $value = null): static
+	public function where(string $name, Comparator $comparator, string|int|float|array|null $value = null): static
 	{
 		if(!empty($this->conditions) && empty($this->nextOperator))
 			throw new \TypeError('Condition added to query chain without operator before previous condition.');
@@ -239,32 +235,30 @@ class Composed extends Simple
 				$conditionStr = ' :'.$key.'_'.$this->index++.' ';
 			}
 
-
-
 			$str .= $condition['operator']?->value.' '.$this->quote($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
 		}
 
 		return $str;
 	}
 
-	public function and(...$where): static
+	public function and(string $name = null, Comparator $comparator = null, string|int|float|array|null $value = null): static
 	{
 		if(!empty($this->conditions))
 			$this->nextOperator = Operator::AND;
 
-		if(!empty($where))
-			$this->where(...$where);
+		if(!empty($name) && !empty($comparator))
+			$this->where($name, $comparator, $value);
 
 		return $this;
 	}
 
-	public function or(...$where): static
+	public function or(string $name = null, Comparator $comparator = null, string|int|float|array|null $value = null): static
 	{
 		if(!empty($this->conditions))
 			$this->nextOperator = Operator::OR;
 
-		if(!empty($where))
-			$this->where(...$where);
+		if(!empty($name) && !empty($comparator))
+			$this->where($name, $comparator, $value);
 
 		return $this;
 	}
@@ -375,7 +369,7 @@ class Composed extends Simple
 		if(empty($this->limit) && empty($this->offset))
 			return '';
 
-		$str = 'LIMIT '. $this->limit .' ';
+		$str = 'LIMIT '. ($this->limit ?? '') .' ';
 		if(!empty($this->offset))
 			$str.= 'OFFSET '. $this->offset .' ';
 
@@ -386,6 +380,6 @@ class Composed extends Simple
 	{
 		$this->bake();
 
-		return $this->queryString;
+		return $this->queryString ?? '';
 	}
 }
