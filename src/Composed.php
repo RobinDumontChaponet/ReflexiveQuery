@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
-use PDOException;
 use Reflexive\Core\Comparator;
-use RuntimeException;
-use TypeError;
 
-class Composed extends Simple
+abstract class Composed extends Simple
 {
 	protected const DEFAULTCOLUMNS = '*';
 
@@ -197,7 +194,7 @@ class Composed extends Simple
 		$this->queryString = null;
 		$name = trim($name);
 
-		$this->conditions[$name] = [
+		$this->conditions[] = [
 			'name' => $name,
 			'comparator' => $comparator,
 			'value' => $value,
@@ -230,7 +227,7 @@ class Composed extends Simple
 					$conditionStr.= ':'.$key.'_'.$this->index++.',';
 				}
 				$conditionStr = ' ('. rtrim($conditionStr, ',') .') ';
-			} else { // we have a simple value
+			} elseif($condition['comparator']!= Comparator::NULL && $condition['comparator']!= Comparator::NOTNULL) { // we have a simple value
 				$this->parameters[$key.'_'.$this->index] = $condition['value'];
 				$conditionStr = ' :'.$key.'_'.$this->index++.' ';
 			}
