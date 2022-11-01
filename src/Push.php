@@ -13,7 +13,7 @@ abstract class Push extends Composed
 	{
 		$this->queryString = null;
 
-		$this->sets[] = [
+		$this->sets[$name] = [
 			'name' => trim($name),
 			'value' => $value,
 		];
