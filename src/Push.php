@@ -21,6 +21,11 @@ abstract class Push extends Composed
 		return $this;
 	}
 
+	public function getSets(): array
+	{
+		return $this->sets;
+	}
+
 	protected function getIntoString(): string
 	{
 		if(empty($this->tables))
