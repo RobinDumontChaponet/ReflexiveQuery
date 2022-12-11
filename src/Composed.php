@@ -377,6 +377,14 @@ abstract class Composed extends Simple
 	{
 		$this->bake();
 
-		return $this->queryString ?? '';
+		if(!empty($this->queryString)) {
+			$str = $this->queryString;
+			foreach($this->parameters as $key => $value) {
+				$str.= PHP_EOL.$key.' => '.$value.', ';
+			}
+			return $str;
+		}
+
+		return '';
 	}
 }
