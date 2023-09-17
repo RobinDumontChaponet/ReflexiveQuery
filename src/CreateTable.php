@@ -35,7 +35,7 @@ class CreateTable extends Simple
 		$this->queryString = null;
 		$name = trim($name);
 
-		$this->columns[] = [
+		$this->columns[$name] = [
 			'name' => $name,
 			'type' => trim($type),
 			'isPrimary' => $isPrimary,
@@ -47,6 +47,14 @@ class CreateTable extends Simple
 			$this->primaryColumnsNames[] = $name;
 
 		return $this;
+	}
+	public function setPrimary(string $columnName)
+	{
+		$this->queryString = null;
+		$name = trim($columnName);
+
+		$this->columns[$name]['isPrimary'] = true;
+		$this->primaryColumnsNames[] = $name;
 	}
 
 // 	// set
@@ -94,7 +102,7 @@ class CreateTable extends Simple
 					'object' => enum_exists($defaultValue::class)?'\''.$defaultValue->name.'\'':'NULL',
 				};
 			}
-			$str.= $column['extra']. ', ';
+			$str = rtrim($str. ' ' .$column['extra'], ' '). ', ';
 		}
 
 		return rtrim($str, ', ');
