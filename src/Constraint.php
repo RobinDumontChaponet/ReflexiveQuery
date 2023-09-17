@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+// UNUSED FOR NOW. May migrate to Reflexive\Models
+
 class Constraint
 {
 	// , CONSTRAINT `Screen_userId` FOREIGN KEY (`userId`) REFERENCES `User` (`id`) ON DELETE SET NULL ON UPDATE CASCADE)
@@ -13,16 +15,6 @@ class Constraint
 		protected readonly ConstraintAction $onDelete = ConstraintAction::noAction,
 		protected readonly ConstraintAction $onUpdate = ConstraintAction::noAction,
 	) {}
-
-	public function getName(): string
-	{
-		return $this->name;
-	}
-
-	public function getKey(): string
-	{
-		return $this->key;
-	}
 
 	public function asString(string $name, string $key): string
 	{

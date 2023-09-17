@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+// UNUSED FOR NOW. May migrate to Reflexive\Models
+
 class Column implements \Stringable
 {
 	function __construct(

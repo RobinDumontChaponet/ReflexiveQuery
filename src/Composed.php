@@ -199,10 +199,9 @@ abstract class Composed extends Simple
 			throw new \TypeError('Condition added to query chain without operator before previous condition.');
 
 		$this->queryString = null;
-		$name = trim($name);
 
 		$this->conditions[] = [
-			'name' => $name,
+			'name' => trim($name),
 			'comparator' => $comparator,
 			'value' => $value,
 			'operator' => $this->nextOperator,
