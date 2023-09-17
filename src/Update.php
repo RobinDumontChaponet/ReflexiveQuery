@@ -49,7 +49,7 @@ class Update extends Push
 				$this->parameters[$set['name'].'_'.$this->index] = $set['value'];
 				$setStr = ':'.$set['name'].'_'.$this->index++.' ';
 			}
-			$str.= $this->quote($set['name']).'='.$setStr.', ';
+			$str.= $this->quoteName($set['name']).'='.$setStr.', ';
 		}
 
 		return rtrim($str, ', ');

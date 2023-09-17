@@ -6,17 +6,19 @@ namespace Reflexive\Query;
 
 use DomainException;
 
-class Simple
+class Simple implements \Stringable
 {
-	// stats
+	/** count the number of call to prepare() */
 	public static int $prepareCount = 0;
 
 	function __construct(
 		protected ?string $queryString = ''
 	) {}
 
-	/*
-	 * @throws \TypeError
+	/**
+	 * return a PDOStatement using $pdo database connection
+	 * @throws \TypeError if for whatever reason PDO->prepare do not return a PDOStatement
+	 * @throws \DomainException if $queryString is empty
 	 */
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
@@ -42,6 +44,12 @@ class Simple
 		return $this->queryString ?? '';
 	}
 
+	public static function quote(string $string): string
+	{
+		return preg_replace('/\b((?<!`)[^\s()`\.]+(?![\(`]))\b/i', '`$1`', $string);
+	}
+
+	/** fetch from $statement, returning data associated to $key or null */
 	public static function read(\PDOStatement $statement, string $key): mixed
 	{
 		if(null === $statement->errorCode())
@@ -55,6 +63,7 @@ class Simple
 		return null;
 	}
 
+	/** utility method, return string containing html table or "No result" after fetching from $statement */
 	public static function format(?\PDOStatement $statement): string
 	{
 		if(null === $statement || $statement->rowCount() <= 0)

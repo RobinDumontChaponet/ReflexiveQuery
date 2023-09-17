@@ -33,7 +33,7 @@ abstract class Push extends Composed
 
 		$str = '';
 		foreach($this->tables as $key => $table) {
-			$str.= $this->quote($table);
+			$str.= $this->quoteName($table);
 
 			if(is_string($key))
 				$str.= ' '.$key;

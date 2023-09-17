@@ -11,10 +11,14 @@ abstract class Composed extends Simple
 	protected const DEFAULTCOLUMNS = '*';
 
 	protected array $columns = [];
+
+	/** add ` around tables and columns names  if set to true */
 	protected bool $quoteNames = true;
 	protected array $tables = [];
 	protected array $conditions = [];
 	protected ?Operator $nextOperator = null;
+
+	/** last parameter index (used to name parameters in resulting queryString)  */
 	protected int $index = 0;
 	protected array $orders = [];
 	protected ?int $limit = null;
@@ -52,8 +56,10 @@ abstract class Composed extends Simple
 		$this->queryString.= $this->getLimitOffsetString();
 	}
 
-	/*
-	 * @throws \TypeError
+	/**
+	 * return a PDOStatement using $pdo database connection
+	 * @throws \TypeError if for whatever reason PDO->prepare do not return a PDOStatement
+	 * @throws \DomainException if $queryString is empty
 	 */
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
@@ -117,10 +123,11 @@ abstract class Composed extends Simple
 		}
 	}
 
-	protected function quote(string $string): string
+	/** add quotes at the right place if necessary */
+	protected function quoteName(string $string): string
 	{
 		if($this->quoteNames)
-			return preg_replace('/\b((?<!`)[^\s()`\.]+(?![\(`]))\b/i', '`$1`', $string);
+			return Simple::quote($string);
 		else
 			return $string;
 	}
@@ -132,7 +139,7 @@ abstract class Composed extends Simple
 
 		$str = '';
 		foreach($this->columns as $key => $column) {
-			$str.= $this->quote($column);
+			$str.= $this->quoteName($column);
 
 			if(is_string($key))
 				$str.= ' '.$key;
@@ -174,7 +181,7 @@ abstract class Composed extends Simple
 
 		$str = ' FROM ';
 		foreach($this->tables as $key => $table) {
-			$str.= $this->quote($table);
+			$str.= $this->quoteName($table);
 
 			if(is_string($key))
 				$str.= ' '.$key;
@@ -232,7 +239,7 @@ abstract class Composed extends Simple
 				$conditionStr = ' :'.$key.'_'.$this->index++.' ';
 			}
 
-			$str .= $condition['operator']?->value.' '.$this->quote($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
+			$str .= $condition['operator']?->value.' '.$this->quoteName($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
 		}
 
 		return $str;
@@ -290,13 +297,13 @@ abstract class Composed extends Simple
 				if(is_string($key = array_keys($this->tables)[0]))
 					$leftTableName = $key;
 				else
-					$leftTableName = $this->quote(array_values($this->tables)[0]);
+					$leftTableName = $this->quoteName(array_values($this->tables)[0]);
 			}
 
 			if(empty($leftTableName))
 				throw new \TypeError('Cannot join without left table name');
 
-			$str .= $join['type']?->value . ' ' . $this->quote($join['rightTableName']) . ' ON ' . $this->quote($leftTableName . '.' . $join['leftColumnName']) . ' ' . $join['comparator']->value . ' ' . $this->quote($join['rightTableName'] . '.' . $join['rightColumnName']).' ';
+			$str .= $join['type']?->value . ' ' . $this->quoteName($join['rightTableName']) . ' ON ' . $this->quoteName($leftTableName . '.' . $join['leftColumnName']) . ' ' . $join['comparator']->value . ' ' . $this->quoteName($join['rightTableName'] . '.' . $join['rightColumnName']).' ';
 		}
 
 		return $str;
@@ -322,7 +329,7 @@ abstract class Composed extends Simple
 
 		$str = ' ORDER BY ';
 		foreach($this->orders as $order) {
-			$str.= $this->quote($order['column']).' '.$order['direction']->value.', ';
+			$str.= $this->quoteName($order['column']).' '.$order['direction']->value.', ';
 		}
 
 		return rtrim($str, ', '). ' ';

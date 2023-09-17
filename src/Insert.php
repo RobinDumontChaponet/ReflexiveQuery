@@ -34,7 +34,7 @@ class Insert extends Push
 
 		$str = ' (';
 		foreach($this->sets as $set) { // columns names
-			$str .= $this->quote($set['name']).', ';
+			$str .= $this->quoteName($set['name']).', ';
 		}
 
 		$str = rtrim($str, ', ').') values (';
