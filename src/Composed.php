@@ -174,6 +174,10 @@ abstract class Composed extends Simple
 
 		return $this;
 	}
+	public function into(array|string|null $tables = null): static
+	{
+		return $this->from($tables);
+	}
 	protected function getFromString(): string
 	{
 		if(empty($this->tables))
