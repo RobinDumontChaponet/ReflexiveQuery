@@ -6,6 +6,6 @@ namespace Reflexive\Query;
 
 enum ColumnExtra: string {
 	case autoIncrement = 'AUTO_INCREMENT';
-	case onUpdateCurrent = 'ON UDPATE current_timestamp()';
+	case onUpdateCurrent = 'ON UPDATE current_timestamp()';
 	case serial = 'SERIAL DEFAULT VALUE';
 }
