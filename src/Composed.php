@@ -337,6 +337,10 @@ abstract class Composed extends Simple
 
 		return rtrim($str, ', '). ' ';
 	}
+	public function isOrdered(): bool
+	{
+		return !empty($this->orders);
+	}
 
 	// limit
 	public function limit(int $limit = null): static
