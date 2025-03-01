@@ -9,7 +9,7 @@ abstract class Push extends Composed
 	protected array $sets = [];
 
 	// set
-	public function set(string $name, string|int|float|array $value = null): static
+	public function set(string $name, string|int|float|array|null $value = null): static
 	{
 		$this->queryString = null;
 

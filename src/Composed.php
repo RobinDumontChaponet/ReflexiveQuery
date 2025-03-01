@@ -248,7 +248,7 @@ abstract class Composed extends Simple
 		return $str;
 	}
 
-	public function and(string $name = null, Comparator $comparator = null, string|int|float|array|null $value = null): static
+	public function and(?string $name = null, ?Comparator $comparator = null, string|int|float|array|null $value = null): static
 	{
 		if(!empty($this->conditions))
 			$this->nextOperator = Operator::AND;
@@ -259,7 +259,7 @@ abstract class Composed extends Simple
 		return $this;
 	}
 
-	public function or(string $name = null, Comparator $comparator = null, string|int|float|array|null $value = null): static
+	public function or(?string $name = null, ?Comparator $comparator = null, string|int|float|array|null $value = null): static
 	{
 		if(!empty($this->conditions))
 			$this->nextOperator = Operator::OR;
@@ -343,7 +343,7 @@ abstract class Composed extends Simple
 	}
 
 	// limit
-	public function limit(int $limit = null): static
+	public function limit(?int $limit = null): static
 	{
 		$this->queryString = null;
 		$this->nextOperator = null;
@@ -359,7 +359,7 @@ abstract class Composed extends Simple
 	{
 		return $this->limit;
 	}
-	public function offset(int $offset = null): static
+	public function offset(?int $offset = null): static
 	{
 		$this->queryString = null;
 		$this->nextOperator = null;
