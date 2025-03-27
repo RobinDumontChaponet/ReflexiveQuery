@@ -11,6 +11,8 @@ class Simple implements \Stringable
 	/** count the number of call to prepare() */
 	public static int $prepareCount = 0;
 
+	protected ?string $appendString = '';
+
 	function __construct(
 		protected ?string $queryString = ''
 	) {}
@@ -22,10 +24,12 @@ class Simple implements \Stringable
 	 */
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
-		if(empty($this->queryString))
+		$string = $this->queryString .' '. $this->appendString;
+
+		if(empty($string))
 			throw new DomainException('Empty query string');
 
-		$statement = $pdo->prepare($this->queryString, [
+		$statement = $pdo->prepare($string, [
 			// \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL,
 		]);
 
@@ -41,7 +45,7 @@ class Simple implements \Stringable
 
 	public function __toString(): string
 	{
-		return $this->queryString ?? '';
+		return $this->queryString ?? ' ' . $this->appendString ?? '';
 	}
 
 	public static function quote(string $string): string
@@ -93,5 +97,12 @@ class Simple implements \Stringable
 		$str.= '</tbody></table>';
 
 		return $str;
+	}
+
+	public function append(string $string): static
+	{
+		$this->appendString .= $string;
+
+		return $this;
 	}
 }

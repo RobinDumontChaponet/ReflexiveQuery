@@ -20,6 +20,7 @@ abstract class Composed extends Simple
 
 	/** last parameter index (used to name parameters in resulting queryString)  */
 	protected int $index = 0;
+	protected array $groups = [];
 	protected array $orders = [];
 	protected ?int $limit = null;
 	protected ?int $offset = null;
@@ -52,6 +53,7 @@ abstract class Composed extends Simple
 		$this->queryString.= $this->getJoinString();
 
 		$this->queryString.= $this->getWhereString();
+		$this->queryString.= $this->getGroupString();
 		$this->queryString.= $this->getOrderString();
 		$this->queryString.= $this->getLimitOffsetString();
 	}
@@ -245,7 +247,7 @@ abstract class Composed extends Simple
 			$str .= $condition['operator']?->value.' '.$this->quoteName($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
 		}
 
-		return $str;
+		return $str .' ';
 	}
 
 	public function and(?string $name = null, ?Comparator $comparator = null, string|int|float|array|null $value = null): static
@@ -312,8 +314,38 @@ abstract class Composed extends Simple
 		return $str;
 	}
 
+	// group by
+	public function group(string $column): static
+	{
+		$this->queryString = null;
+		$this->nextOperator = null;
+
+		$this->groups[] = [
+			'column' => trim(htmlspecialchars(htmlentities(strip_tags(addcslashes($column, '%_')), ENT_NOQUOTES, 'UTF-8'))),
+		];
+
+		return $this;
+	}
+	protected function getGroupString(): string
+	{
+		if(empty($this->groups))
+			return '';
+
+		$str = ' GROUP BY ';
+
+		foreach($this->groups as $group) {
+			$str.= $this->quoteName($group['column']).', ';
+		}
+
+		return rtrim($str, ', ').' ';
+	}
+	public function isGrouped(): bool
+	{
+		return !empty($this->groups);
+	}
+
 	// order by
-	public function order(string $column, Direction $direction = Direction::ASC): static
+	public function order(string $column, Direction $direction = Direction::ASC, bool $nullable = false): static
 	{
 		$this->queryString = null;
 		$this->nextOperator = null;
@@ -321,6 +353,7 @@ abstract class Composed extends Simple
 		$this->orders[] = [
 			'column' => trim(htmlspecialchars(htmlentities(strip_tags(addcslashes($column, '%_')), ENT_NOQUOTES, 'UTF-8'))),
 			'direction' => $direction,
+			'nullable' => $nullable
 		];
 
 		return $this;
@@ -330,12 +363,34 @@ abstract class Composed extends Simple
 		if(empty($this->orders))
 			return '';
 
-		$str = ' ORDER BY ';
-		foreach($this->orders as $order) {
-			$str.= $this->quoteName($order['column']).' '.$order['direction']->value.', ';
+		$lastWasNullable = false;
+		if(count($this->orders) == 1) {
+			$this->orders[0]['nullable'] = false;
 		}
 
-		return rtrim($str, ', '). ' ';
+		$str = ' ORDER BY ';
+
+		foreach($this->orders as $order) {
+			if($order['nullable'] && !$lastWasNullable) {
+				$str.= 'IFNULL(';
+			}
+
+			$str.= $this->quoteName($order['column']);
+
+			if(!$order['nullable'] && !$lastWasNullable) {
+				$str.= ' '.$order['direction']->value;
+			}
+
+			if(!$order['nullable'] && $lastWasNullable) {
+				$str.= ') '.$order['direction']->value.', ';
+			} else {
+				$str.= ', ';
+			}
+
+			$lastWasNullable = $order['nullable'];
+		}
+
+		return rtrim($str, ', ').' ';
 	}
 	public function isOrdered(): bool
 	{
@@ -392,7 +447,7 @@ abstract class Composed extends Simple
 		$this->bake();
 
 		if(!empty($this->queryString)) {
-			$str = $this->queryString;
+			$str = parent::__toString();
 			foreach($this->parameters as $key => $value) {
 				$str.= PHP_EOL.$key.' => '.$value.', ';
 			}
