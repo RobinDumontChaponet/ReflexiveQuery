@@ -363,31 +363,16 @@ abstract class Composed extends Simple
 		if(empty($this->orders))
 			return '';
 
-		$lastWasNullable = false;
-		if(count($this->orders) == 1) {
-			$this->orders[0]['nullable'] = false;
-		}
-
 		$str = ' ORDER BY ';
-
 		foreach($this->orders as $order) {
-			if($order['nullable'] && !$lastWasNullable) {
-				$str.= 'IFNULL(';
-			}
-
 			$str.= $this->quoteName($order['column']);
 
-			if(!$order['nullable'] && !$lastWasNullable) {
+			if($order['nullable']) {
+				$str.= ' IS NULL ' .( $order['direction'] == Direction::ASC ? Direction::DESC->value : Direction::ASC->value);
+			} else {
 				$str.= ' '.$order['direction']->value;
 			}
-
-			if(!$order['nullable'] && $lastWasNullable) {
-				$str.= ') '.$order['direction']->value.', ';
-			} else {
-				$str.= ', ';
-			}
-
-			$lastWasNullable = $order['nullable'];
+			$str.= ', ';
 		}
 
 		return rtrim($str, ', ').' ';
