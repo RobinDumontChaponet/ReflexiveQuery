@@ -364,11 +364,21 @@ abstract class Composed extends Simple
 			return '';
 
 		$str = ' ORDER BY ';
+		if(count($this->orders) == 3 && $this->orders[0]['nullable']) {
+			$str.= 'IFNULL(';
+
+			$str.= $this->quoteName($this->orders[0]['column']).', ';
+			$str.= $this->quoteName($this->orders[1]['column']);
+			$str.= ') '.$this->orders[1]['direction']->value. ' ';
+
+			return $str;
+		}
+
 		foreach($this->orders as $order) {
 			$str.= $this->quoteName($order['column']);
 
 			if($order['nullable']) {
-				$str.= ' IS NULL ' .( $order['direction'] == Direction::ASC ? Direction::DESC->value : Direction::ASC->value);
+				$str.= ' IS NULL ' .( $order['direction']->value);
 			} else {
 				$str.= ' '.$order['direction']->value;
 			}
