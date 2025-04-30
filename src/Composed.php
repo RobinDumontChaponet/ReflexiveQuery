@@ -206,7 +206,7 @@ abstract class Composed extends Simple
 
 		$this->queryString = null;
 
-		$this->conditions[] = [
+		$this->conditions[$name.'_'.count($this->conditions)] = [
 			'name' => trim($name),
 			'comparator' => $comparator,
 			'value' => $value,
