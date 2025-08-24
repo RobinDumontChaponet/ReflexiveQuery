@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Reflexive\Query;
 
 use Reflexive\Core\Comparator;
+use Reflexive\Core\Condition;
+use Reflexive\Core\ConditionGroup;
 
 abstract class Composed extends Simple
 {
@@ -13,13 +15,11 @@ abstract class Composed extends Simple
 	protected array $columns = [];
 
 	/** add ` around tables and columns names  if set to true */
-	protected bool $quoteNames = true;
+	public bool $quoteNames = true;
+	public bool $prettify = false;
 	protected array $tables = [];
-	protected array $conditions = [];
-	protected ?Operator $nextOperator = null;
+	protected ?ConditionGroup $conditionGroup = null;
 
-	/** last parameter index (used to name parameters in resulting queryString)  */
-	protected int $index = 0;
 	protected array $groups = [];
 	protected array $orders = [];
 	protected ?int $limit = null;
@@ -43,11 +43,14 @@ abstract class Composed extends Simple
 			return;
 
 		$this->parameters = [];
-		$this->index = 0;
 
 		$this->queryString = $this->command. (empty($this->commandEnd) ? ' ' : '');
 		$this->queryString.= $this->getColumnsString();
 		$this->queryString.= !empty($this->commandEnd) ? $this->commandEnd.' ' : '';
+
+		if($this->prettify)
+			$this->queryString.= PHP_EOL;
+
 		$this->queryString.= $this->getFromString();
 
 		$this->queryString.= $this->getJoinString();
@@ -56,6 +59,9 @@ abstract class Composed extends Simple
 		$this->queryString.= $this->getGroupString();
 		$this->queryString.= $this->getOrderString();
 		$this->queryString.= $this->getLimitOffsetString();
+
+		if($this->prettify)
+			$this->queryString = rtrim($this->queryString, PHP_EOL);
 	}
 
 	/**
@@ -129,7 +135,7 @@ abstract class Composed extends Simple
 	protected function quoteName(string $string): string
 	{
 		if($this->quoteNames)
-			return Simple::quote($string);
+			return \Reflexive\Core\Strings::quote($string);
 		else
 			return $string;
 	}
@@ -156,7 +162,6 @@ abstract class Composed extends Simple
 	public function from(array|string|null $tables = null): static
 	{
 		$this->queryString = null;
-		$this->nextOperator = null;
 		$this->tables = [];
 
 		if(is_array($tables)) {
@@ -195,79 +200,97 @@ abstract class Composed extends Simple
 			$str.= ', ';
 		}
 
-		return rtrim($str, ', ');
+		return rtrim($str, ', ') .($this->prettify ? PHP_EOL : '');
 	}
 
 	// where
-	public function where(string $name, Comparator $comparator, string|int|float|array|null $value = null): static
+	public function where(Condition|ConditionGroup $condition): static
 	{
-		if(!empty($this->conditions) && empty($this->nextOperator))
-			throw new \TypeError('Condition added to query chain without operator before previous condition.');
-
 		$this->queryString = null;
 
-		$this->conditions[$name.'_'.count($this->conditions)] = [
-			'name' => trim($name),
-			'comparator' => $comparator,
-			'value' => $value,
-			'operator' => $this->nextOperator,
-		];
+		if(empty($this->conditionGroup))
+			$this->conditionGroup = new ConditionGroup();
 
-		$this->nextOperator = null;
+		$this->conditionGroup->where($condition);
 
 		return $this;
 	}
 
-	public function getConditions(): array
+	public function getConditionGroup(): ?ConditionGroup
 	{
-		return $this->conditions;
+		return $this->conditionGroup;
+	}
+
+	public function hasConditions(): bool
+	{
+		return $this->conditionGroup?->hasConditions() ?? false;
+	}
+
+	public function conditionCount(): int
+	{
+		return $this->conditionGroup?->count() ?? 0;
 	}
 
 	protected function getWhereString(): string
 	{
-		if(empty($this->conditions))
+		if(!$this->conditionGroup?->hasConditions())
 			return '';
 
+		$index = 0;
+		$prettify = $this->prettify ? 0 : -1;
 		$str = ' WHERE ';
-		foreach($this->conditions as $condition) {
-			$conditionStr = '';
-			$key = lcfirst(str_replace('.', '', $condition['name']));
 
-			if(is_array($condition['value'])) { // we have an array of value, probably for an IN condition or something
-				foreach($condition['value'] as $value) {
-					$this->parameters[$key.'_'.$this->index] = $value;
-					$conditionStr.= ':'.$key.'_'.$this->index++.',';
-				}
-				$conditionStr = ' ('. rtrim($conditionStr, ',') .') ';
-			} elseif($condition['comparator']!= Comparator::NULL && $condition['comparator']!= Comparator::NOTNULL) { // we have a simple value
-				$this->parameters[$key.'_'.$this->index] = $condition['value'];
-				$conditionStr = ' :'.$key.'_'.$this->index++.' ';
-			}
+		$baked = $this->conditionGroup->bake($index, $this->quoteNames, null, $prettify);
 
-			$str .= $condition['operator']?->value.' '.$this->quoteName($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
-		}
+		$str .= $baked['queryString'];
+		$this->parameters += $baked['parameters'];
 
-		return $str .' ';
+		return $str .($this->prettify ? PHP_EOL : '');
 	}
 
-	public function and(?string $name = null, ?Comparator $comparator = null, string|int|float|array|null $value = null): static
-	{
-		if(!empty($this->conditions))
-			$this->nextOperator = Operator::AND;
+	// protected function getWhereString(): string
+	// {
+	// 	if(empty($this->conditions))
+	// 		return '';
+//
+	// 	$str = ' WHERE ';
+	// 	foreach($this->conditions as $condition) {
+	// 		$conditionStr = '';
+	// 		$key = lcfirst(str_replace('.', '', $condition['name']));
+//
+	// 		if(is_array($condition['value'])) { // we have an array of value, probably for an IN condition or something
+	// 			foreach($condition['value'] as $value) {
+	// 				$this->parameters[$key.'_'.$this->index] = $value;
+	// 				$conditionStr.= ':'.$key.'_'.$this->index++.',';
+	// 			}
+	// 			$conditionStr = ' ('. rtrim($conditionStr, ',') .') ';
+	// 		} elseif($condition['comparator']!= Comparator::NULL && $condition['comparator']!= Comparator::NOTNULL) { // we have a simple value
+	// 			$this->parameters[$key.'_'.$this->index] = $condition['value'];
+	// 			$conditionStr = ' :'.$key.'_'.$this->index++.' ';
+	// 		}
+//
+	// 		$str .= $condition['operator']?->value.' '.$this->quoteName($condition['name']).' '.$condition['comparator']?->value.$conditionStr;
+	// 	}
+//
+	// 	return $str .' ';
+	// }
 
-		if(!empty($name) && !empty($comparator))
-			$this->where($name, $comparator, $value);
+	public function and(Condition|ConditionGroup|null $condition = null): static
+	{
+		if(empty($this->conditionGroup))
+			$this->conditionGroup = new ConditionGroup();
+
+		$this->conditionGroup?->and($condition);
 
 		return $this;
 	}
 
-	public function or(?string $name = null, ?Comparator $comparator = null, string|int|float|array|null $value = null): static
+	public function or(Condition|ConditionGroup|null $condition = null): static
 	{
-		if(!empty($this->conditions))
-			$this->nextOperator = Operator::OR;
+		if(empty($this->conditionGroup))
+			$this->conditionGroup = new ConditionGroup();
 
-		if(!empty($name) && !empty($comparator))
-			$this->where($name, $comparator, $value);
+		$this->conditionGroup?->or($condition);
 
 		return $this;
 	}
@@ -311,14 +334,13 @@ abstract class Composed extends Simple
 			$str .= $join['type']?->value . ' ' . $this->quoteName($join['rightTableName']) . ' ON ' . $this->quoteName($leftTableName . '.' . $join['leftColumnName']) . ' ' . $join['comparator']->value . ' ' . $this->quoteName($join['rightTableName'] . '.' . $join['rightColumnName']).' ';
 		}
 
-		return $str;
+		return $str .($this->prettify ? PHP_EOL : '');
 	}
 
 	// group by
 	public function group(string $column): static
 	{
 		$this->queryString = null;
-		$this->nextOperator = null;
 
 		$this->groups[] = [
 			'column' => trim(htmlspecialchars(htmlentities(strip_tags(addcslashes($column, '%_')), ENT_NOQUOTES, 'UTF-8'))),
@@ -337,7 +359,7 @@ abstract class Composed extends Simple
 			$str.= $this->quoteName($group['column']).', ';
 		}
 
-		return rtrim($str, ', ').' ';
+		return rtrim($str, ', ').' ' .($this->prettify ? PHP_EOL : '');
 	}
 	public function isGrouped(): bool
 	{
@@ -348,7 +370,6 @@ abstract class Composed extends Simple
 	public function order(string $column, Direction $direction = Direction::ASC, bool $nullable = false): static
 	{
 		$this->queryString = null;
-		$this->nextOperator = null;
 
 		$this->orders[] = [
 			'column' => trim(htmlspecialchars(htmlentities(strip_tags(addcslashes($column, '%_')), ENT_NOQUOTES, 'UTF-8'))),
@@ -371,7 +392,7 @@ abstract class Composed extends Simple
 			$str.= $this->quoteName($this->orders[1]['column']);
 			$str.= ') '.$this->orders[1]['direction']->value. ' ';
 
-			return $str;
+			return $str .($this->prettify ? PHP_EOL : '');
 		}
 
 		foreach($this->orders as $order) {
@@ -385,7 +406,7 @@ abstract class Composed extends Simple
 			$str.= ', ';
 		}
 
-		return rtrim($str, ', ').' ';
+		return rtrim($str, ', ').' ' .($this->prettify ? PHP_EOL : '');
 	}
 	public function isOrdered(): bool
 	{
@@ -396,7 +417,6 @@ abstract class Composed extends Simple
 	public function limit(?int $limit = null): static
 	{
 		$this->queryString = null;
-		$this->nextOperator = null;
 
 		if($limit < 0)
 			throw new \TypeError('Invalid limit ('. $limit. '). Cannot be negative.');
@@ -412,7 +432,6 @@ abstract class Composed extends Simple
 	public function offset(?int $offset = null): static
 	{
 		$this->queryString = null;
-		$this->nextOperator = null;
 
 		if($offset < 0)
 			throw new \TypeError('Invalid offset ('. $offset. '). Cannot be negative.');
@@ -442,11 +461,12 @@ abstract class Composed extends Simple
 		$this->bake();
 
 		if(!empty($this->queryString)) {
-			$str = parent::__toString();
+			$str = parent::__toString() . '; '.PHP_EOL.'/* {';
 			foreach($this->parameters as $key => $value) {
-				$str.= PHP_EOL.$key.' => '.$value.', ';
+				$str.= PHP_EOL."\t".$key.' => '.$value.', ';
 			}
-			return $str;
+
+			return $str .PHP_EOL.'} */ ';
 		}
 
 		return '';

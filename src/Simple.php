@@ -48,11 +48,6 @@ class Simple implements \Stringable
 		return $this->queryString ?? ' ' . $this->appendString ?? '';
 	}
 
-	public static function quote(string $string): string
-	{
-		return preg_replace('/\b((?<!`)[^\s()`\.]+(?![\(`]))\b/i', '`$1`', $string);
-	}
-
 	/** fetch from $statement, returning data associated to $key or null */
 	public static function read(\PDOStatement $statement, string $key): mixed
 	{
