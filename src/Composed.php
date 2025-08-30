@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Reflexive\Query;
 
 use Reflexive\Core\Comparator;
-use Reflexive\Core\Condition;
-use Reflexive\Core\ConditionGroup;
+// use Reflexive\Core\Condition;
+use Reflexive\Query\ConditionGroup;
 
 abstract class Composed extends Simple
 {
