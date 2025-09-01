@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use \Reflexive\Core\Strings;
+
 class CreateTable extends Simple
 {
 	protected array $columns = [];
@@ -22,7 +24,7 @@ class CreateTable extends Simple
 		if(!empty($this->queryString))
 			return;
 
-		$this->queryString = 'CREATE TABLE '.parent::quote($this->name).' (';
+		$this->queryString = 'CREATE TABLE '.Strings::quote($this->name).' (';
 		$this->queryString.= $this->getColumnsString();
 		$this->queryString.= $this->getPrimaryColumnsString();
 		$this->queryString.= $this->getConstraintsString();
@@ -81,7 +83,7 @@ class CreateTable extends Simple
 
 		$str = '';
 		foreach($this->columns as $column) {
-			$str.= Simple::quote($column['name']) .' ';
+			$str.= Strings::quote($column['name']) .' ';
 			$str.= $column['type'];
 			// $str.= $column['isPrimary'] ? ' PRIMARY KEY ':'';
 			$str.= $column['nullable'] === false || $column['isPrimary'] ? ' NOT NULL' : '';
@@ -156,10 +158,10 @@ class CreateTable extends Simple
 		$str = '';
 		foreach($this->constraints as $constraint) {
 			$str.= ', CONSTRAINT ';
-			$str.= Simple::quote($constraint['name']) .' FOREIGN KEY (';
-			$str.= Simple::quote($constraint['key']) .') REFERENCES ';
-			$str.= Simple::quote($constraint['referencedTableName']) .' (';
-			$str.= Simple::quote($constraint['referencedKey']) .') ';
+			$str.= Strings::quote($constraint['name']) .' FOREIGN KEY (';
+			$str.= Strings::quote($constraint['key']) .') REFERENCES ';
+			$str.= Strings::quote($constraint['referencedTableName']) .' (';
+			$str.= Strings::quote($constraint['referencedKey']) .') ';
 			$str.= 'ON DELETE '. $constraint['onDelete']->value. ' ';
 			$str.= 'ON UPDATE '. $constraint['onUpdate']->value;
 		}

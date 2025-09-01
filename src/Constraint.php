@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use \Reflexive\Core\Strings;
+
 // UNUSED FOR NOW. May migrate to Reflexive\Models
 
 class Constraint
@@ -19,10 +21,10 @@ class Constraint
 	public function asString(string $name, string $key): string
 	{
 		$str = 'CONSTRAINT ';
-		$str.= Simple::quote($name) .' FOREIGN KEY (';
-		$str.= Simple::quote($key) .') REFERENCES ';
-		$str.= Simple::quote($this->referencedTableName) .' (';
-		$str.= Simple::quote($this->referencedKey) .') ';
+		$str.= Strings::quote($name) .' FOREIGN KEY (';
+		$str.= Strings::quote($key) .') REFERENCES ';
+		$str.= Strings::quote($this->referencedTableName) .' (';
+		$str.= Strings::quote($this->referencedKey) .') ';
 		$str.= 'ON DELETE '. $this->onDelete->value;
 		$str.= 'ON UPDATE '. $this->onUpdate->value;
 

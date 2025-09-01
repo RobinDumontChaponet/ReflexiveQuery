@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use \Reflexive\Core\Strings;
+
 // UNUSED FOR NOW. May migrate to Reflexive\Models
 
 class Column implements \Stringable
@@ -48,7 +50,7 @@ class Column implements \Stringable
 
 	public function __toString(): string
 	{
-		$str = Simple::quote($this->name) .' ';
+		$str = Strings::quote($this->name) .' ';
 		$str.= $this->type;
 		$str.= $this->primary ? ' PRIMARY KEY ':'';
 		$str.= $this->nullable === false || $this->primary ? ' NOT NULL' : '';
