@@ -7,6 +7,7 @@ namespace Reflexive\Query;
 class Insert extends Push
 {
 	protected array $sets = [];
+	protected int $index = 0;
 
 	public function __construct(array|string|null $columns = [])
 	{

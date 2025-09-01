@@ -6,6 +6,8 @@ namespace Reflexive\Query;
 
 class Delete extends Composed
 {
+	protected int $index = 0;
+
 	public function __construct()
 	{
 		parent::__construct('DELETE');
