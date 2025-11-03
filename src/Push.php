@@ -26,6 +26,17 @@ abstract class Push extends Composed
 		return $this->sets;
 	}
 
+	public function willSet(): array
+	{
+		$array = [];
+
+		foreach($this->sets as $set) {
+			$array[] = $set['name'];
+		}
+
+		return $array;
+	}
+
 	protected function getIntoString(): string
 	{
 		if(empty($this->tables))
