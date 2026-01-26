@@ -9,9 +9,9 @@ class Insert extends Push
 	protected array $sets = [];
 	protected int $index = 0;
 
-	public function __construct(array|string|null $columns = [])
+	public function __construct(array|string|null $columns = [], bool $ignore = false)
 	{
-		parent::__construct('INSERT INTO', $columns);
+		parent::__construct('INSERT '.($ignore ? 'IGNORE ' : '').'INTO', $columns);
 	}
 
 	protected function bake(): void
