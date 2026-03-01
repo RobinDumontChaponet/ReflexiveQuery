@@ -15,8 +15,8 @@ class Condition extends \Reflexive\Core\Condition
 		Comparator $comparator,
 		string|int|float|bool|array|null $value = null
 	) {
-		parent::__construct($name, $comparator);
-		$this->value = $value;
+		parent::__construct($name, $comparator, $value);
+		// $this->value = $value;
 	}
 
 	// oh, this is some kind of factory function uh…
