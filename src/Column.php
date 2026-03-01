@@ -48,6 +48,7 @@ class Column implements \Stringable
 		$this->constraint = $constraint;
 	}
 
+	#[\Override]
 	public function __toString(): string
 	{
 		$str = Strings::quote($this->name) .' ';

@@ -8,3 +8,4 @@ coverage.clover
 .DS_Store
 .nova
 .phpunit.result.cache
+.psalm

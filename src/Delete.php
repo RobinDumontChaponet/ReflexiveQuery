@@ -13,6 +13,7 @@ class Delete extends Composed
 		parent::__construct('DELETE');
 	}
 
+	#[\Override]
 	protected function bake(): void
 	{
 		if(!empty($this->queryString))

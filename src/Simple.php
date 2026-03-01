@@ -43,9 +43,10 @@ class Simple implements \Stringable
 		return $statement;
 	}
 
+	#[\Override]
 	public function __toString(): string
 	{
-		return $this->queryString ?? ' ' . $this->appendString ?? '';
+		return ($this->queryString ?? ' ') . ($this->appendString ?? '');
 	}
 
 	/** fetch from $statement, returning data associated to $key or null */

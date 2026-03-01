@@ -69,6 +69,7 @@ abstract class Composed extends Simple
 	 * @throws \TypeError if for whatever reason PDO->prepare do not return a PDOStatement
 	 * @throws \DomainException if $queryString is empty
 	 */
+	#[\Override]
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
 		$this->bake();
@@ -280,7 +281,7 @@ abstract class Composed extends Simple
 		if(empty($this->conditionGroup))
 			$this->conditionGroup = new ConditionGroup();
 
-		$this->conditionGroup?->and($condition);
+		$this->conditionGroup->and($condition);
 
 		return $this;
 	}
@@ -290,7 +291,7 @@ abstract class Composed extends Simple
 		if(empty($this->conditionGroup))
 			$this->conditionGroup = new ConditionGroup();
 
-		$this->conditionGroup?->or($condition);
+		$this->conditionGroup->or($condition);
 
 		return $this;
 	}

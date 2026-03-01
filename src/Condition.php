@@ -39,7 +39,7 @@ class Condition extends \Reflexive\Core\Condition
 		// $queryString = ($prettify > 0 ? str_repeat("\t", $prettify) : '');
 		$queryString = $operator !== null ? $operator->value.($prettify > 0 ? PHP_EOL.str_repeat("\t", $prettify) : '') : '';
 		$queryString.= $quoteNames ? Strings::quote($this->name) : $this->name;
-		$queryString.= ' '.$this->comparator?->value;
+		$queryString.= ' '.$this->comparator->value;
 		$parameters = [];
 
 		$key = lcfirst(str_replace('.', '', $this->name));

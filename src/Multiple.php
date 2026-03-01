@@ -25,6 +25,7 @@ class Multiple extends Simple
 		}
 	}
 
+	#[\Override]
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
 		$this->bake();

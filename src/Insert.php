@@ -14,6 +14,7 @@ class Insert extends Push
 		parent::__construct('INSERT '.($ignore ? 'IGNORE ' : '').'INTO', $columns);
 	}
 
+	#[\Override]
 	protected function bake(): void
 	{
 		if(!empty($this->queryString))

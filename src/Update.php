@@ -14,6 +14,7 @@ class Update extends Push
 		parent::__construct('UPDATE', $columns);
 	}
 
+	#[\Override]
 	protected function bake(): void
 	{
 		if(!empty($this->queryString))
