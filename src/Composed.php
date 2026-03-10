@@ -382,33 +382,59 @@ abstract class Composed extends Simple
 	}
 	protected function getOrderString(): string
 	{
-		if(empty($this->orders))
+		if (empty($this->orders)) {
 			return '';
+		}
 
 		$str = ' ORDER BY ';
-		if(count($this->orders) == 3 && $this->orders[0]['nullable']) {
-			$str.= 'IFNULL(';
+		$orderCount = count($this->orders);
 
-			$str.= $this->quoteName($this->orders[0]['column']).', ';
-			$str.= $this->quoteName($this->orders[1]['column']);
-			$str.= ') '.$this->orders[1]['direction']->value. ' ';
+		if ($orderCount > 1) {
+			$direction = $this->orders[0]['direction']->value;
+			$canUseIfNull = true;
+			$leadingNullableCount = 0;
 
-			return $str .($this->prettify ? PHP_EOL : '');
-		}
+			foreach ($this->orders as $index => $order) {
+				if ($order['direction']->value !== $direction) {
+					$canUseIfNull = false;
+					break;
+				}
+				if ($order['nullable']) {
+					$leadingNullableCount++;
+					continue;
+				}
 
-		foreach($this->orders as $order) {
-			$str.= $this->quoteName($order['column']);
-
-			if($order['nullable']) {
-				$str.= ' IS NULL ' .( $order['direction']->value);
-			} else {
-				$str.= ' '.$order['direction']->value;
+				if ($index !== $orderCount - 1) { // ensures that the first non-nullable column appears only at the end
+					$canUseIfNull = false;
+				}
+				break;
 			}
-			$str.= ', ';
+
+			/* Only build IFNULL(...) when all directions match, there id at least one nullable leading column and at least one fallback column */
+			if ($canUseIfNull && $leadingNullableCount > 0) {
+				$columns = array_column($this->orders, 'column');
+				$columns = array_slice($columns, 0, min($leadingNullableCount + 1, $orderCount));
+
+				if (count($columns) > 1) {
+					$expression = $this->quoteName(array_pop($columns));
+
+					while (!empty($columns)) {
+						$expression = 'IFNULL(' . $this->quoteName(array_pop($columns)) . ', ' . $expression . ')';
+					}
+
+					$str .= $expression . ' ' . $direction;
+					return $str . ' ' . ($this->prettify ? PHP_EOL : '');
+				}
+			}
 		}
 
-		return rtrim($str, ', ').' ' .($this->prettify ? PHP_EOL : '');
+		foreach ($this->orders as $order) {
+			$str .= $this->quoteName($order['column']) . ' ' . $order['direction']->value . ', ';
+		}
+
+		return rtrim($str, ', ') . ' ' . ($this->prettify ? PHP_EOL : '');
 	}
+
 	public function isOrdered(): bool
 	{
 		return !empty($this->orders);
