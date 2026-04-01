@@ -391,12 +391,12 @@ abstract class Composed extends Simple
 
 		if ($orderCount > 1) {
 			$direction = $this->orders[0]['direction']->value;
-			$canUseIfNull = true;
+			$canUseCoalesce = true;
 			$leadingNullableCount = 0;
 
 			foreach ($this->orders as $index => $order) {
 				if ($order['direction']->value !== $direction) {
-					$canUseIfNull = false;
+					$canUseCoalesce = false;
 					break;
 				}
 				if ($order['nullable']) {
@@ -404,25 +404,30 @@ abstract class Composed extends Simple
 					continue;
 				}
 
-				if ($index !== $orderCount - 1) { // ensures that the first non-nullable column appears only at the end
-					$canUseIfNull = false;
+				// Ensure the first non-nullable column appears only at the end
+				if ($index !== $orderCount - 1) {
+					$canUseCoalesce = false;
 				}
 				break;
 			}
 
-			/* Only build IFNULL(...) when all directions match, there id at least one nullable leading column and at least one fallback column */
-			if ($canUseIfNull && $leadingNullableCount > 0) {
+			/*
+			 * Only build COALESCE(...) when:
+			 * - all directions match,
+			 * - there is at least one nullable leading column,
+			 * - and there is at least one fallback column.
+			 */
+			if ($canUseCoalesce && $leadingNullableCount > 0) {
 				$columns = array_column($this->orders, 'column');
 				$columns = array_slice($columns, 0, min($leadingNullableCount + 1, $orderCount));
 
 				if (count($columns) > 1) {
-					$expression = $this->quoteName(array_pop($columns));
+					$quotedColumns = array_map(
+						fn (string $column): string => $this->quoteName($column),
+						$columns
+					);
 
-					while (!empty($columns)) {
-						$expression = 'IFNULL(' . $this->quoteName(array_pop($columns)) . ', ' . $expression . ')';
-					}
-
-					$str .= $expression . ' ' . $direction;
+					$str .= 'COALESCE(' . implode(', ', $quotedColumns) . ') ' . $direction;
 					return $str . ' ' . ($this->prettify ? PHP_EOL : '');
 				}
 			}
