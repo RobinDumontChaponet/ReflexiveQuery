@@ -84,4 +84,44 @@ final class QueryBuilderTest extends PHPUnit\Framework\TestCase
 		$this->assertStringContainsString('LEFT JOIN `posts` ON `users`.`id` = `posts`.`id`', $sql);
 		$this->assertStringContainsString('ORDER BY COALESCE(`published_at`, `created_at`)', $sql);
 	}
+
+	public function testMutationAfterRenderingRebuildsQuery()
+	{
+		// Verifies mutating a rendered query invalidates the cached SQL string.
+		$query = (new Select('id'))
+			->from('users');
+
+		(string)$query;
+		$query->join(Join::left, 'profiles', 'id');
+		$query->and(Condition::EQUAL('active', 1));
+
+		$sql = (string)$query;
+
+		$this->assertStringContainsString('LEFT JOIN `profiles`', $sql);
+		$this->assertStringContainsString('WHERE `active` = :active_0', $sql);
+	}
+
+	public function testLimitZeroIsRendered()
+	{
+		// Verifies a zero limit is preserved instead of treated as absent.
+		$query = (new Select('id'))
+			->from('users')
+			->limit(0);
+
+		$this->assertStringContainsString('LIMIT 0', (string)$query);
+	}
+
+	public function testExplainBakesSelectBeforePreparingStatement()
+	{
+		// Verifies EXPLAIN prepares the current SELECT query.
+		$database = $this->createDatabase();
+		$query = (new Select('id'))
+			->from('users')
+			->where(Condition::EQUAL('active', 1));
+
+		$statement = $query->explain($database);
+
+		$this->assertStringStartsWith('EXPLAIN SELECT', $statement->queryString);
+		$this->assertStringContainsString('WHERE `active` = :active_0', $statement->queryString);
+	}
 }

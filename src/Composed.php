@@ -116,6 +116,9 @@ abstract class Composed extends Simple
 	// columns
 	public function setColumns(array|string|null $columns = []): void
 	{
+		$this->queryString = null;
+		$this->columns = [];
+
 		if(is_array($columns)) {
 			foreach($columns as $key => $column) {
 				$column = trim($column);
@@ -278,6 +281,8 @@ abstract class Composed extends Simple
 
 	public function and(Condition|ConditionGroup|null $condition = null): static
 	{
+		$this->queryString = null;
+
 		if(empty($this->conditionGroup))
 			$this->conditionGroup = new ConditionGroup();
 
@@ -288,6 +293,8 @@ abstract class Composed extends Simple
 
 	public function or(Condition|ConditionGroup|null $condition = null): static
 	{
+		$this->queryString = null;
+
 		if(empty($this->conditionGroup))
 			$this->conditionGroup = new ConditionGroup();
 
@@ -299,6 +306,8 @@ abstract class Composed extends Simple
 	// joins
 	public function join(Join $joinType, string $rightTableName, string $columnName, Comparator $comparator = Comparator::EQUAL, ?string $leftTableName = null, ?string $leftColumnName = null): static
 	{
+		$this->queryString = null;
+
 		$this->joins[] = [
 			'type' => $joinType,
 			'leftTableName' => $leftTableName,
@@ -478,11 +487,12 @@ abstract class Composed extends Simple
 	}
 	protected function getLimitOffsetString(): string
 	{
-		if(empty($this->limit) && empty($this->offset))
-			return '';
+		$str = '';
 
-		$str = 'LIMIT '. ($this->limit ?? '') .' ';
-		if(!empty($this->offset))
+		if($this->limit !== null)
+			$str.=  'LIMIT '. $this->limit .' ';
+
+		if($this->offset !== null)
 			$str.= 'OFFSET '. $this->offset .' ';
 
 		return $str;

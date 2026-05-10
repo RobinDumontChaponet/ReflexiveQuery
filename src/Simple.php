@@ -66,26 +66,33 @@ class Simple implements \Stringable
 	/** utility method, return string containing html table or "No result" after fetching from $statement */
 	public static function format(?\PDOStatement $statement): string
 	{
-		if(null === $statement || $statement->rowCount() <= 0)
+		if(null === $statement)
 			return 'No result';
 
 		$count = $statement->columnCount();
-		$str = '';
+
+		if($count <= 0)
+			return 'No result';
+
+		$rows = $statement->fetchAll(\PDO::FETCH_ASSOC);
+
+		if(empty($rows))
+			return 'No result';
 
 		// Get column headers
-		$str.= '<table><thead><tr>';
+		$str = '<table><thead><tr>';
 		for ($i = 0; $i < $count; $i++){
-			$meta = $statement->getColumnMeta($i)["name"];
-			$str.= '<th>' . $meta . '</th>';
+			$meta = (string)$statement->getColumnMeta($i)["name"];
+			$str.= '<th>' . self::escapeHtml($meta) . '</th>';
 		}
 		$str.= '</tr></thead><tbody>';
 
 		// Get row data
-		while($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
+		foreach($rows as $row) {
 			$str.= '<tr>';
 			for ($i = 0; $i < $count; $i++){
-				$meta = $statement->getColumnMeta($i)["name"];
-				$str.= '<td>' . ($row[$meta] ?? '') . '</td>';
+				$meta = (string)$statement->getColumnMeta($i)["name"];
+				$str.= '<td>' . self::escapeHtml($row[$meta] ?? '') . '</td>';
 			}
 			$str.= '</tr>';
 		}
@@ -93,6 +100,11 @@ class Simple implements \Stringable
 		$str.= '</tbody></table>';
 
 		return $str;
+	}
+
+	private static function escapeHtml(mixed $value): string
+	{
+		return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	}
 
 	public function append(string $string): static

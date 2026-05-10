@@ -108,4 +108,20 @@ final class SimpleTest extends PHPUnit\Framework\TestCase
 
 		(new Simple())->prepare($pdo);
 	}
+
+	public function testFormatEscapesHtmlAndReadsSelectRows()
+	{
+		// Verifies format renders SELECT rows safely even when rowCount is zero.
+		$pdo = new Database(
+			'sqlite::memory:',
+		);
+		$statement = (new Simple("SELECT '<b>x</b>' AS value"))->prepare($pdo);
+		$statement->execute();
+
+		$formatted = Simple::format($statement);
+
+		$this->assertStringContainsString('<table>', $formatted);
+		$this->assertStringContainsString('&lt;b&gt;x&lt;/b&gt;', $formatted);
+		$this->assertStringNotContainsString('<td><b>x</b></td>', $formatted);
+	}
 }
