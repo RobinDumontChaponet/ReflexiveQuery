@@ -7,6 +7,7 @@ namespace Reflexive\Query;
 use \Reflexive\Core\Strings;
 
 // UNUSED FOR NOW. May migrate to Reflexive\Models
+// Wait ? What ? Unused ? I don't remember… why did I write that before ?
 
 class Constraint
 {
@@ -25,7 +26,7 @@ class Constraint
 		$str.= Strings::quote($key) .') REFERENCES ';
 		$str.= Strings::quote($this->referencedTableName) .' (';
 		$str.= Strings::quote($this->referencedKey) .') ';
-		$str.= 'ON DELETE '. $this->onDelete->value;
+		$str.= 'ON DELETE '. $this->onDelete->value.' ';
 		$str.= 'ON UPDATE '. $this->onUpdate->value;
 
 		return $str;

@@ -344,7 +344,7 @@ abstract class Composed extends Simple
 		$this->queryString = null;
 
 		$this->groups[] = [
-			'column' => trim(htmlspecialchars(htmlentities(strip_tags(addcslashes($column, '%_')), ENT_NOQUOTES, 'UTF-8'))),
+			'column' => trim(htmlspecialchars(htmlentities(strip_tags($column), ENT_NOQUOTES, 'UTF-8'))),
 		];
 
 		return $this;
@@ -373,7 +373,7 @@ abstract class Composed extends Simple
 		$this->queryString = null;
 
 		$this->orders[] = [
-			'column' => trim(htmlspecialchars(htmlentities(strip_tags(addcslashes($column, '%_')), ENT_NOQUOTES, 'UTF-8'))),
+			'column' => trim(htmlspecialchars(htmlentities(strip_tags($column), ENT_NOQUOTES, 'UTF-8'))),
 			'direction' => $direction,
 			'nullable' => $nullable
 		];

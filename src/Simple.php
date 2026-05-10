@@ -24,9 +24,9 @@ class Simple implements \Stringable
 	 */
 	public function prepare(\PDO $pdo): \PDOStatement
 	{
-		$string = $this->queryString .' '. $this->appendString;
+		$string = ($this->queryString ?? '') . ($this->appendString ?? '');
 
-		if(empty($string))
+		if(trim($string) === '')
 			throw new DomainException('Empty query string');
 
 		$statement = $pdo->prepare($string, [

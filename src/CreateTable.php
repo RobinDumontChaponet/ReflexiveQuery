@@ -92,7 +92,7 @@ class CreateTable extends Simple
 				$defaultValue = $column['defaultValue'];
 				$defaultValueType = gettype($defaultValue);
 				$str.= match($defaultValueType) {
-					'integer', 'double', 'float' => $defaultValue,
+					'integer', 'double' => $defaultValue,
 					'boolean' => (int)$defaultValue,
 					'string' => in_array(
 						$defaultValue,

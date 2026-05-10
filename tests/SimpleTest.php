@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
+use Reflexive\Core\Database;
 use Reflexive\Query\Simple;
 
 final class SimpleTest extends PHPUnit\Framework\TestCase
 {
 	public function testConstruct()
 	{
+		// Verifies an empty raw query starts with the default state.
+		$prepareCount = Simple::$prepareCount;
 		$instance = new Simple();
 
 		$this->assertIsInt($instance::$prepareCount);
-		$this->assertEquals(
-			0,
+		$this->assertSame(
+			$prepareCount,
 			$instance::$prepareCount
 		);
 
@@ -25,6 +28,7 @@ final class SimpleTest extends PHPUnit\Framework\TestCase
 
 	public function testToString()
 	{
+		// Verifies raw query strings are returned unchanged.
 		$value = 'test';
 		$instance = new Simple($value);
 
@@ -36,9 +40,10 @@ final class SimpleTest extends PHPUnit\Framework\TestCase
 
 	public function testPrepare()
 	{
+		// Verifies raw SQL is prepared without changing the query string.
 		$queryString = 'SELECT 1 WHERE false';
-		$pdo = new PDO(
-			'sqlite:',
+		$pdo = new Database(
+			'sqlite::memory:',
 		);
 
 		$instance = new Simple($queryString);
@@ -57,11 +62,10 @@ final class SimpleTest extends PHPUnit\Framework\TestCase
 
 	public function testRead()
 	{
-		// public static function read(\PDOStatement $statement, string $key): mixed
-
+		// Verifies read returns the first row value for the requested key.
 		$queryString = 'SELECT 1';
-		$pdo = new PDO(
-			'sqlite:',
+		$pdo = new Database(
+			'sqlite::memory:',
 		);
 
 		$instance = new Simple($queryString);
@@ -77,11 +81,10 @@ final class SimpleTest extends PHPUnit\Framework\TestCase
 
 	public function testReadNull()
 	{
-		// public static function read(\PDOStatement $statement, string $key): mixed
-
+		// Verifies read returns null when the prepared statement has no row.
 		$queryString = 'SELECT 1 WHERE false';
-		$pdo = new PDO(
-			'sqlite:',
+		$pdo = new Database(
+			'sqlite::memory:',
 		);
 
 		$instance = new Simple($queryString);
@@ -92,5 +95,17 @@ final class SimpleTest extends PHPUnit\Framework\TestCase
 		$this->assertNull(
 			$read
 		);
+	}
+
+	public function testPrepareRejectsEmptyQueryString()
+	{
+		// Verifies empty raw queries are rejected before reaching PDO.
+		$pdo = new Database(
+			'sqlite::memory:',
+		);
+
+		$this->expectException(DomainException::class);
+
+		(new Simple())->prepare($pdo);
 	}
 }
