@@ -490,7 +490,7 @@ abstract class Composed extends Simple
 		$str = '';
 
 		if($this->limit !== null)
-			$str.=  'LIMIT '. $this->limit .' ';
+			$str.=  ' LIMIT '. $this->limit .' ';
 
 		if($this->offset !== null)
 			$str.= 'OFFSET '. $this->offset .' ';
