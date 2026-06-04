@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Reflexive\Query;
 
+use Psr\SimpleCache;
 use Reflexive\Core\Comparator;
 // use Reflexive\Core\Condition;
 use Reflexive\Query\ConditionGroup;
@@ -11,6 +12,13 @@ use Reflexive\Query\ConditionGroup;
 abstract class Composed extends Simple
 {
 	protected const DEFAULTCOLUMNS = '*';
+
+	public static bool $useCache = true;
+	public static ?SimpleCache\CacheInterface $cache = null;
+	public static int $cacheTTL = 5;
+
+	protected static array $cacheLocal = [];
+	protected static array $cacheGenerations = [];
 
 	protected array $columns = [];
 
@@ -87,6 +95,98 @@ abstract class Composed extends Simple
 		$this->bake();
 
 		return hash('sha256', static::class."\0".($this->queryString ?? '')."\0".serialize($this->parameters));
+	}
+
+	public function getCacheKey(string $namespace, string $databaseIdentity): string
+	{
+		return 'query_'
+			.hash('sha256', $namespace).'_'
+			.hash('sha256', $databaseIdentity).'_'
+			.hash('sha256', static::getCacheGeneration($namespace)).'_'
+			.$this->getCacheIdentity();
+	}
+
+	public static function getCachedValue(string $key): mixed
+	{
+		if(!static::$useCache)
+			return null;
+
+		$entry = static::$cacheLocal[$key] ?? static::$cache?->get($key);
+		if(!is_array($entry))
+			return null;
+
+		if(($entry['expiresAt'] ?? 0) < microtime(true)) {
+			unset(static::$cacheLocal[$key]);
+			static::$cache?->delete($key);
+			return null;
+		}
+
+		static::$cacheLocal[$key] = $entry;
+		return $entry['value'] ?? null;
+	}
+
+	public static function setCachedValue(string $key, mixed $value): void
+	{
+		if(!static::$useCache || static::$cacheTTL <= 0)
+			return;
+
+		$entry = [
+			'expiresAt' => microtime(true) + (float)static::$cacheTTL,
+			'value' => $value,
+		];
+
+		static::$cacheLocal[$key] = $entry;
+		static::$cache?->set($key, $entry, static::$cacheTTL);
+	}
+
+	public static function clearCache(?string $namespace = null): void
+	{
+		if($namespace === null) {
+			static::$cacheLocal = [];
+			static::bumpCacheGeneration(null);
+			return;
+		}
+
+		$prefix = 'query_'.hash('sha256', $namespace).'_';
+		foreach(array_keys(static::$cacheLocal) as $key) {
+			if(str_starts_with($key, $prefix))
+				unset(static::$cacheLocal[$key]);
+		}
+
+		static::bumpCacheGeneration($namespace);
+	}
+
+	public static function clearLocalCache(): void
+	{
+		static::$cacheLocal = [];
+	}
+
+	private static function getCacheGeneration(string $namespace): string
+	{
+		return static::getCacheGenerationValue(null).':'.static::getCacheGenerationValue($namespace);
+	}
+
+	private static function getCacheGenerationValue(?string $namespace): string
+	{
+		$key = static::getCacheGenerationKey($namespace);
+		$value = static::$cache?->get($key);
+		if(is_scalar($value))
+			return (string)$value;
+
+		return static::$cacheGenerations[$key] ?? '0';
+	}
+
+	private static function bumpCacheGeneration(?string $namespace): void
+	{
+		$key = static::getCacheGenerationKey($namespace);
+		$value = (string)microtime(true).':'.count(static::$cacheGenerations);
+		static::$cacheGenerations[$key] = $value;
+		static::$cache?->set($key, $value);
+	}
+
+	private static function getCacheGenerationKey(?string $namespace): string
+	{
+		return 'query_generation_'.hash('sha256', $namespace ?? '*');
 	}
 
 	// Builder

@@ -4,10 +4,72 @@ declare(strict_types=1);
 
 use Reflexive\Core\Comparator;
 use Reflexive\Core\Database;
+use Reflexive\Query\Composed;
 use Reflexive\Query\Condition;
 use Reflexive\Query\Direction;
 use Reflexive\Query\Join;
 use Reflexive\Query\Select;
+
+final class QueryBuilderTestCache implements Psr\SimpleCache\CacheInterface
+{
+	public array $values = [];
+	public array $ttls = [];
+
+	public function get(string $key, mixed $default = null): mixed
+	{
+		return $this->values[$key] ?? $default;
+	}
+
+	public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
+	{
+		$this->values[$key] = $value;
+		$this->ttls[$key] = $ttl;
+
+		return true;
+	}
+
+	public function delete(string $key): bool
+	{
+		unset($this->values[$key], $this->ttls[$key]);
+
+		return true;
+	}
+
+	public function clear(): bool
+	{
+		$this->values = [];
+		$this->ttls = [];
+
+		return true;
+	}
+
+	public function getMultiple(iterable $keys, mixed $default = null): iterable
+	{
+		foreach($keys as $key)
+			yield $key => $this->get($key, $default);
+	}
+
+	public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
+	{
+		foreach($values as $key => $value)
+			$this->set($key, $value, $ttl);
+
+		return true;
+	}
+
+	public function deleteMultiple(iterable $keys): bool
+	{
+		foreach($keys as $key)
+			$this->delete($key);
+
+		return true;
+	}
+
+	public function has(string $key): bool
+	{
+		return array_key_exists($key, $this->values);
+	}
+}
 
 final class QueryBuilderTest extends PHPUnit\Framework\TestCase
 {
@@ -148,5 +210,38 @@ final class QueryBuilderTest extends PHPUnit\Framework\TestCase
 		$this->assertSame($first->getCacheIdentity(), $same->getCacheIdentity());
 		$this->assertNotSame($first->getCacheIdentity(), $differentParameter->getCacheIdentity());
 		$this->assertSame($prepareCount, Select::$prepareCount);
+	}
+
+	public function testCacheStoresValuesInSharedCacheAndInvalidatesByNamespace(): void
+	{
+		// Verifies Composed owns shared cache plumbing while callers choose payload semantics.
+		$cache = new QueryBuilderTestCache();
+		$query = (new Select('id'))->from('users');
+		$previousUseCache = Composed::$useCache;
+		$previousCache = Composed::$cache;
+		$previousCacheTTL = Composed::$cacheTTL;
+
+		try {
+			Composed::$useCache = true;
+			Composed::$cache = $cache;
+			Composed::$cacheTTL = 60;
+			Composed::clearCache();
+
+			$key = $query->getCacheKey('model:User', 'db');
+			Composed::setCachedValue($key, ['keys' => [1, 2]]);
+			Composed::clearLocalCache();
+
+			$this->assertSame(['keys' => [1, 2]], Composed::getCachedValue($key));
+			$this->assertSame(60, $cache->ttls[$key]);
+
+			Composed::clearCache('model:User');
+			$this->assertNotSame($key, $query->getCacheKey('model:User', 'db'));
+			$this->assertNull(Composed::getCachedValue($query->getCacheKey('model:User', 'db')));
+		} finally {
+			Composed::clearCache();
+			Composed::$useCache = $previousUseCache;
+			Composed::$cache = $previousCache;
+			Composed::$cacheTTL = $previousCacheTTL;
+		}
 	}
 }
