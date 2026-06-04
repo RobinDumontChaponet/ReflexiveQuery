@@ -124,4 +124,29 @@ final class QueryBuilderTest extends PHPUnit\Framework\TestCase
 		$this->assertStringStartsWith('EXPLAIN SELECT', $statement->queryString);
 		$this->assertStringContainsString('WHERE `active` = :active_0', $statement->queryString);
 	}
+
+	public function testCacheIdentityIsStableAndParameterSensitive(): void
+	{
+		// Verifies query identity can key external caches without preparing statements.
+		$prepareCount = Select::$prepareCount;
+		$first = (new Select('id'))
+			->from('users')
+			->where(Condition::EQUAL('active', 1))
+			->order('id')
+			->limit(10);
+		$same = (new Select('id'))
+			->from('users')
+			->where(Condition::EQUAL('active', 1))
+			->order('id')
+			->limit(10);
+		$differentParameter = (new Select('id'))
+			->from('users')
+			->where(Condition::EQUAL('active', 0))
+			->order('id')
+			->limit(10);
+
+		$this->assertSame($first->getCacheIdentity(), $same->getCacheIdentity());
+		$this->assertNotSame($first->getCacheIdentity(), $differentParameter->getCacheIdentity());
+		$this->assertSame($prepareCount, Select::$prepareCount);
+	}
 }

@@ -6,19 +6,13 @@ namespace Reflexive\Query;
 
 use \Reflexive\Core\Strings;
 
-class CreateTable extends Simple
+class CreateTable extends TableQuery
 {
 	protected array $columns = [];
 	protected array $primaryColumnsNames = [];
 	protected array $constraints = [];
 
-	public function __construct(
-		protected string $name,
-	)
-	{
-		parent::__construct();
-	}
-
+	#[\Override]
 	protected function bake(): void
 	{
 		if(!empty($this->queryString))
@@ -35,28 +29,27 @@ class CreateTable extends Simple
 	public function addColumn(string $name, string $type, bool $isPrimary = false, bool|null $nullable = null, mixed $defaultValue = null, ?ColumnExtra $extra = null): static
 	{
 		$this->queryString = null;
-		$name = trim($name);
 
-		$this->columns[$name] = [
-			'name' => $name,
-			'type' => trim($type),
-			'isPrimary' => $isPrimary,
-			'nullable' => $nullable,
-			'defaultValue' => $defaultValue,
-			'extra' => $extra?->value,
-		];
+		$column = $this->addColumnDefinition($name, $type, $isPrimary, $nullable, $defaultValue, $extra);
+		$this->columns[$column['name']] = $column;
+
 		if($isPrimary)
-			$this->primaryColumnsNames[] = $name;
+			$this->addPrimaryColumnName($column['name']);
 
 		return $this;
 	}
-	public function setPrimary(string $columnName)
+	public function setPrimary(string $columnName): static
 	{
 		$this->queryString = null;
 		$name = trim($columnName);
 
+		if(!isset($this->columns[$name]))
+			throw new \TypeError('Unknown column.');
+
 		$this->columns[$name]['isPrimary'] = true;
-		$this->primaryColumnsNames[] = $name;
+		$this->addPrimaryColumnName($name);
+
+		return $this;
 	}
 
 // 	// set
@@ -83,28 +76,7 @@ class CreateTable extends Simple
 
 		$str = '';
 		foreach($this->columns as $column) {
-			$str.= Strings::quote($column['name']) .' ';
-			$str.= $column['type'];
-			// $str.= $column['isPrimary'] ? ' PRIMARY KEY ':'';
-			$str.= $column['nullable'] === false || $column['isPrimary'] ? ' NOT NULL' : '';
-			if(isset($column['defaultValue'])) {
-				$str.= ' DEFAULT ';
-				$defaultValue = $column['defaultValue'];
-				$defaultValueType = gettype($defaultValue);
-				$str.= match($defaultValueType) {
-					'integer', 'double' => $defaultValue,
-					'boolean' => (int)$defaultValue,
-					'string' => in_array(
-						$defaultValue,
-						[
-							'NOW()',
-							'CURRENT_TIMESTAMP'
-						]
-					)? $defaultValue : '\''.$defaultValue.'\'',
-					'object' => enum_exists($defaultValue::class)?'\''.$defaultValue->name.'\'':'NULL',
-				};
-			}
-			$str = rtrim($str. ' ' .$column['extra'], ' '). ', ';
+			$str.= $this->getColumnString($column). ', ';
 		}
 
 		return rtrim($str, ', ');
@@ -114,10 +86,7 @@ class CreateTable extends Simple
 		if(empty($this->primaryColumnsNames))
 			return '';
 
-		$str = ', PRIMARY KEY (';
-		$str.= rtrim('`'.implode('`, `', $this->primaryColumnsNames).'`', ', ');
-
-		return $str.')';
+		return ', PRIMARY KEY ('.$this->getColumnListString($this->primaryColumnsNames).')';
 	}
 
 	// protected function getColumnsConstraintsString(): string
@@ -138,14 +107,7 @@ class CreateTable extends Simple
 	{
 		$this->queryString = null;
 
-		$this->constraints[] = [
-			'name' => trim($name),
-			'key' => trim($key),
-			'referencedTableName' => $referencedTableName,
-			'referencedKey' => $referencedKey,
-			'onDelete' => $onDelete,
-			'onUpdate' => $onUpdate,
-		];
+		$this->constraints[] = $this->addConstraintDefinition($name, $key, $referencedTableName, $referencedKey, $onDelete, $onUpdate);
 
 		return $this;
 	}
@@ -157,22 +119,16 @@ class CreateTable extends Simple
 
 		$str = '';
 		foreach($this->constraints as $constraint) {
-			$str.= ', CONSTRAINT ';
-			$str.= Strings::quote($constraint['name']) .' FOREIGN KEY (';
-			$str.= Strings::quote($constraint['key']) .') REFERENCES ';
-			$str.= Strings::quote($constraint['referencedTableName']) .' (';
-			$str.= Strings::quote($constraint['referencedKey']) .') ';
-			$str.= 'ON DELETE '. $constraint['onDelete']->value. ' ';
-			$str.= 'ON UPDATE '. $constraint['onUpdate']->value;
+			$str.= ', '.$this->getConstraintString($constraint);
 		}
 
 		return $str;
 	}
 
-	public function __toString(): string
+	protected function addPrimaryColumnName(string $columnName): void
 	{
-		$this->bake();
-
-		return $this->queryString ?? '';
+		if(!in_array($columnName, $this->primaryColumnsNames, true))
+			$this->primaryColumnsNames[] = $columnName;
 	}
+
 }

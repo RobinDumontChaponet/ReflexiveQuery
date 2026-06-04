@@ -82,6 +82,13 @@ abstract class Composed extends Simple
 		return $statement;
 	}
 
+	public function getCacheIdentity(): string
+	{
+		$this->bake();
+
+		return hash('sha256', static::class."\0".($this->queryString ?? '')."\0".serialize($this->parameters));
+	}
+
 	// Builder
 	public static function select(array|string|null $columns = []): Select
 	{
